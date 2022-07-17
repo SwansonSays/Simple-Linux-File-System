@@ -34,30 +34,14 @@ int RootDirectory;        // Location of the Root Directory
 long Signature;              // Checks to see if the Volume Control Block is valid
 
 }volumeControlBlock;
-int freeSpaceSize; // put in VCB struct
-unsigned char* freeSpaceMap; //put in VCB struct
-
-
-void initVCB(){
-	volumeControlBlock * vcb = malloc(sizeof(volumeControlBlock));
-	printf("this is sparta : %ld", sizeof(volumeControlBlock));
-	vcb->blockSize = 512; //Size of the blocks
-	vcb->totalBlockCount = 19531;   //Total volume
-	vcb->freeBlocks= freeSpaceSize; // Number of free blocks
-	vcb->bitMapLocation = 1; //Location to the bitmap
-	vcb->bitMapBlocks = 1;       // Number of blocks within the Bitmap
-	vcb->RootDirectory = 0;      // Location of the Root Directory
-	vcb->Signature = 0x416C6C69736F6E41;
-	LBAread(vcb,1,0);
-	LBAwrite(vcb,1,0);
-
-}
-
+int freeSpaceSize; //size of bitMap
+unsigned char* freeSpaceMap; 
 
 void setBit(unsigned char* map, int i)
 	{
 		map[i/8] |= 1 << (i % 8);
 	}
+
 
 int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 	{
@@ -74,7 +58,7 @@ int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 		}
     
 	//set bits as used for VCB and Free Space Managment
-	for(int i = 0; i < freeSpaceSize; i++)
+	for(int i = 0; i < freeSpaceSize + 1; i++)
 		{
 		setBit(freeSpaceMap, i);
 		}
@@ -83,12 +67,28 @@ int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 	return freeSpaceSize + 1;
 	}
 
+void initVCB(uint64_t numberOfBlocks, uint64_t blockSize){
+	volumeControlBlock * vcb = malloc(sizeof(volumeControlBlock));
+	printf("this is sparta : %ld", sizeof(volumeControlBlock));
+	vcb->blockSize = 512; //Size of the blocks
+	vcb->totalBlockCount = 19531;   //Total volume
+	vcb->freeBlocks= vcb->totalBlockCount - initBitMap(numberOfBlocks, blockSize); // Number of free blocks
+	vcb->bitMapLocation = 1; //Location to the bitmap
+	vcb->bitMapBlocks = freeSpaceSize;       // Number of blocks within the Bitmap
+	vcb->RootDirectory = 0;      // Location of the Root Directory
+	vcb->Signature = 0x416C6C69736F6E41;
+	//LBAread(vcb,1,0);
+	LBAwrite(vcb,1,0);
+
+}
+
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	{
 	printf ("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
 	/* TODO: Add any code you need to initialize your file system. */
 
-	int firstFreeBlock = initBitMap(numberOfBlocks,blockSize); // put in VCB init function
+	initVCB(numberOfBlocks,blockSize);
+	//int firstFreeBlock = initBitMap(numberOfBlocks,blockSize); // put in VCB init function
 	return 0;
 	}
 	
