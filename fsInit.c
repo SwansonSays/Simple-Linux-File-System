@@ -69,14 +69,13 @@ int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 
 void initVCB(uint64_t numberOfBlocks, uint64_t blockSize){
 	volumeControlBlock * vcb = malloc(sizeof(volumeControlBlock));
-	printf("this is sparta : %ld", sizeof(volumeControlBlock));
 	vcb->blockSize = 512; //Size of the blocks
 	vcb->totalBlockCount = 19531;   //Total volume
 	vcb->freeBlocks= vcb->totalBlockCount - initBitMap(numberOfBlocks, blockSize); // Number of free blocks
 	vcb->bitMapLocation = 1; //Location to the bitmap
 	vcb->bitMapBlocks = freeSpaceSize;       // Number of blocks within the Bitmap
 	vcb->RootDirectory = 0;      // Location of the Root Directory
-	vcb->Signature = 0x416C6C69736F6E41;
+	vcb->Signature = 0x6e6f74666172;
 	//LBAread(vcb,1,0);
 	LBAwrite(vcb,1,0);
 
