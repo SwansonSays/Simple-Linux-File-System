@@ -24,9 +24,19 @@
 #include "fsLow.h"
 #include "mfs.h"
 
+typedef struct volumeControlBlock{
+int blockSize; //Size of the blocks
+int totalBlockCount;   //Total volume
+int freeBlocks; // Number of free blocks
+int bitMapLocation; //Location to the bitmap
+int bitMapBlocks;        // Number of blocks within the Bitmap
+int RootDirectory;        // Location of the Root Directory
+long Signature;              // Checks to see if the Volume Control Block is valid
 
+}volumeControlBlock;
 int freeSpaceSize; // put in VCB struct
 unsigned char* freeSpaceMap; //put in VCB struct
+
 
 void setBit(unsigned char* map, int i)
 	{
@@ -61,7 +71,17 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	{
 	printf ("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
 	/* TODO: Add any code you need to initialize your file system. */
-
+	volumeControlBlock * vcb = malloc(numberOfBlocks);
+	printf("this is sparta : %ld", sizeof(volumeControlBlock));
+	vcb->blockSize = blockSize; //Size of the blocks
+	vcb->totalBlockCount = numberOfBlocks;   //Total volume
+	vcb->freeBlocks= freeSpaceSize; // Number of free blocks
+	vcb->bitMapLocation = 1; //Location to the bitmap
+	vcb->bitMapBlocks = 1;       // Number of blocks within the Bitmap
+	vcb->RootDirectory = 100;      // Location of the Root Directory
+	vcb->Signature = 0x416C6C69736F6E41;
+	LBAread(vcb,1,0);
+	LBAwrite(vcb,1,0);
 	int firstFreeBlock = initBitMap(numberOfBlocks,blockSize); // put in VCB init function
 	return 0;
 	}
