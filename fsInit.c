@@ -38,6 +38,22 @@ int freeSpaceSize; // put in VCB struct
 unsigned char* freeSpaceMap; //put in VCB struct
 
 
+void initVCB(){
+	volumeControlBlock * vcb = malloc(sizeof(volumeControlBlock));
+	printf("this is sparta : %ld", sizeof(volumeControlBlock));
+	vcb->blockSize = 512; //Size of the blocks
+	vcb->totalBlockCount = 19531;   //Total volume
+	vcb->freeBlocks= freeSpaceSize; // Number of free blocks
+	vcb->bitMapLocation = 1; //Location to the bitmap
+	vcb->bitMapBlocks = 1;       // Number of blocks within the Bitmap
+	vcb->RootDirectory = 0;      // Location of the Root Directory
+	vcb->Signature = 0x416C6C69736F6E41;
+	LBAread(vcb,1,0);
+	LBAwrite(vcb,1,0);
+
+}
+
+
 void setBit(unsigned char* map, int i)
 	{
 		map[i/8] |= 1 << (i % 8);
@@ -71,17 +87,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	{
 	printf ("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
 	/* TODO: Add any code you need to initialize your file system. */
-	volumeControlBlock * vcb = malloc(numberOfBlocks);
-	printf("this is sparta : %ld", sizeof(volumeControlBlock));
-	vcb->blockSize = blockSize; //Size of the blocks
-	vcb->totalBlockCount = numberOfBlocks;   //Total volume
-	vcb->freeBlocks= freeSpaceSize; // Number of free blocks
-	vcb->bitMapLocation = 1; //Location to the bitmap
-	vcb->bitMapBlocks = 1;       // Number of blocks within the Bitmap
-	vcb->RootDirectory = 100;      // Location of the Root Directory
-	vcb->Signature = 0x416C6C69736F6E41;
-	LBAread(vcb,1,0);
-	LBAwrite(vcb,1,0);
+
 	int firstFreeBlock = initBitMap(numberOfBlocks,blockSize); // put in VCB init function
 	return 0;
 	}
