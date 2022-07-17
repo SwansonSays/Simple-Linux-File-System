@@ -24,6 +24,8 @@
 #include "fsLow.h"
 #include "mfs.h"
 
+#define MAXFILENAME 255
+
 typedef struct volumeControlBlock{
 int blockSize; //Size of the blocks
 int totalBlockCount;   //Total volume
@@ -34,6 +36,15 @@ int RootDirectory;        // Location of the Root Directory
 long Signature;              // Checks to see if the Volume Control Block is valid
 
 }volumeControlBlock;
+
+typedef struct dirEntry{
+	char fileName[MAXFILENAME];
+	int fileSize;
+	time_t dateCreated;
+	time_t dateModified;
+	int location;
+}dirEntry;
+
 int freeSpaceSize; //size of bitMap
 unsigned char* freeSpaceMap; 
 
@@ -67,6 +78,10 @@ int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 	return freeSpaceSize + 1;
 	}
 
+void initDir() {
+	
+}
+
 void initVCB(uint64_t numberOfBlocks, uint64_t blockSize){
 	volumeControlBlock * vcb = malloc(sizeof(volumeControlBlock));
 	printf("this is sparta : %ld", sizeof(volumeControlBlock));
@@ -88,6 +103,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	/* TODO: Add any code you need to initialize your file system. */
 
 	initVCB(numberOfBlocks,blockSize);
+	initDir();
 	//int firstFreeBlock = initBitMap(numberOfBlocks,blockSize); // put in VCB init function
 	return 0;
 	}
