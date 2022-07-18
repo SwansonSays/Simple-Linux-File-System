@@ -101,7 +101,7 @@ int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 int initDir(uint64_t blockSize) {
 	int blocksNeeded = 7;
 	int rootLocation;
-	
+
 	dirEntry* root[blocksNeeded * blockSize];
 	for (int i = 0; i < sizeof(root)/sizeof(dirEntry); i++) {
 		root[i] = malloc(sizeof(dirEntry));
@@ -111,19 +111,23 @@ int initDir(uint64_t blockSize) {
 	for(int i = 0; i < blocksNeeded; i++) {
 		setBit(freeSpaceMap, i + rootLocation);
 	}
-		
+	
+	LBAwrite(freeSpaceMap, freeSpaceSize, 1);
+
 	strcpy(root[0]->fileName, ".");
 	root[0]->fileSize = blocksNeeded * blockSize;
-	localtime(&root[0]->dateCreated);
-	localtime(&root[0]->dateModified);
+	root[0]->dateCreated = time(0);
+	root[0]->dateModified = time(0);
 	root[0]->location = rootLocation;
 	strcpy(root[1]->fileName, "..");
 	root[1]->fileSize = blocksNeeded * blockSize;
-	localtime(&root[1]->dateCreated);
-	localtime(&root[1]->dateModified);
+	root[1]->dateCreated = time(0);
+	root[1]->dateModified = time(0);
 	root[1]->location = rootLocation;
+	//printf("FileName[%s], FIleSize[%d], DateCreated[%ld], DateModified[%ld], location[%d]\n",root[0]->fileName,root[0]->fileSize,root[0]->dateCreated,root[0]->dateModified,root[0]->location);
+	//printf("DIR ENTRY SIZE[%ld]\n", sizeof(dirEntry));
+	LBAwrite(root[0], blocksNeeded, rootLocation); 
 	
-	LBAwrite(root, blocksNeeded, rootLocation); 
 	return rootLocation;
 }
 
