@@ -24,7 +24,7 @@
 #include "fsLow.h"
 #include "mfs.h"
 
-#define MAXFILENAME 255
+#define MAXFILENAME 30
 
 typedef struct volumeControlBlock{
 int blockSize; //Size of the blocks
@@ -47,11 +47,31 @@ typedef struct dirEntry{
 
 int freeSpaceSize; //size of bitMap
 unsigned char* freeSpaceMap; 
+volumeControlBlock * vcb;
 
 void setBit(unsigned char* map, int i)
 	{
 		map[i/8] |= 1 << (i % 8);
 	}
+
+int getBit(unsigned char* map, int i) {
+	return map[i/8] & (1 << (i % 8)) != 0;
+}
+
+int getFree(int blocksNeeded) {
+	int freeCount, firstFree = 0;
+	for(int i = 0; i < vcb->totalBlockCount; i++) {
+		if(getBit(freeSpaceMap, i) == 0) {
+			if(freeCount == 0) {
+				firstFree = i;
+			}
+			freeCount++;
+			if(freeCount == blocksNeeded) {
+				return firstFree;
+			}
+		}
+	}
+}
 
 
 int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
@@ -78,18 +98,43 @@ int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 	return freeSpaceSize + 1;
 	}
 
-void initDir() {
+int initDir(uint64_t blockSize) {
+	int blocksNeeded = 7;
+	int rootLocation;
 	
+	dirEntry* root[blocksNeeded * blockSize];
+	for (int i = 0; i < sizeof(root)/sizeof(dirEntry); i++) {
+		root[i] = malloc(sizeof(dirEntry));
+	}
+	
+	rootLocation = getFree(blocksNeeded);
+	for(int i = 0; i < blocksNeeded; i++) {
+		setBit(freeSpaceMap, i + rootLocation);
+	}
+		
+	strcpy(root[0]->fileName, ".");
+	root[0]->fileSize = blocksNeeded * blockSize;
+	localtime(&root[0]->dateCreated);
+	localtime(&root[0]->dateModified);
+	root[0]->location = rootLocation;
+	strcpy(root[1]->fileName, "..");
+	root[1]->fileSize = blocksNeeded * blockSize;
+	localtime(&root[1]->dateCreated);
+	localtime(&root[1]->dateModified);
+	root[1]->location = rootLocation;
+	
+	LBAwrite(root, blocksNeeded, rootLocation); 
+	return rootLocation;
 }
 
 void initVCB(uint64_t numberOfBlocks, uint64_t blockSize){
-	volumeControlBlock * vcb = malloc(sizeof(volumeControlBlock));
+	vcb = malloc(sizeof(volumeControlBlock));
 	vcb->blockSize = 512; //Size of the blocks
 	vcb->totalBlockCount = 19531;   //Total volume
 	vcb->freeBlocks= vcb->totalBlockCount - initBitMap(numberOfBlocks, blockSize); // Number of free blocks
 	vcb->bitMapLocation = 1; //Location to the bitmap
 	vcb->bitMapBlocks = freeSpaceSize;       // Number of blocks within the Bitmap
-	vcb->RootDirectory = 0;      // Location of the Root Directory
+	vcb->RootDirectory = initDir(blockSize);      // Location of the Root Directory
 	vcb->Signature = 0x6e6f74666172;
 	//LBAread(vcb,1,0);
 	LBAwrite(vcb,1,0);
@@ -102,8 +147,6 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	/* TODO: Add any code you need to initialize your file system. */
 
 	initVCB(numberOfBlocks,blockSize);
-	initDir();
-	//int firstFreeBlock = initBitMap(numberOfBlocks,blockSize); // put in VCB init function
 	return 0;
 	}
 	
