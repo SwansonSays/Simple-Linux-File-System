@@ -25,6 +25,7 @@
 #include "mfs.h"
 
 #define MAXFILENAME 30
+#define MINDIRENTRIES 50
 
 typedef struct volumeControlBlock{
 int blockSize; //Size of the blocks
@@ -99,9 +100,20 @@ int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 	}
 
 int initDir(uint64_t blockSize) {
-	int blocksNeeded = 7;
+	int blocksNeeded = 0;
+	int bytesNeeded = 0; 
+	int bytesLeftOver, dirLeftOver = 0;
 	int rootLocation;
 
+	bytesNeeded = (MINDIRENTRIES * sizeof(dirEntry));
+	printf("BYTES NEEDED: [%d]\n", bytesNeeded);
+	bytesLeftOver = bytesNeeded % blockSize;
+	printf("BYTES LEFTOVER: [%d]\n", bytesLeftOver);
+	dirLeftOver = bytesLeftOver / sizeof(dirEntry);
+	printf("DIR LEFTOVER: [%d]\n", dirLeftOver);
+	bytesNeeded += dirLeftOver * sizeof(dirEntry);
+	blocksNeeded = (bytesNeeded / blockSize) + 1;
+	printf("BLOCKS NEEDED: [%d]\n", blocksNeeded);
 	dirEntry* root[blocksNeeded * blockSize];
 	for (int i = 0; i < sizeof(root)/sizeof(dirEntry); i++) {
 		root[i] = malloc(sizeof(dirEntry));
@@ -124,10 +136,10 @@ int initDir(uint64_t blockSize) {
 	root[1]->dateCreated = time(0);
 	root[1]->dateModified = time(0);
 	root[1]->location = rootLocation;
-	//printf("FileName[%s], FIleSize[%d], DateCreated[%ld], DateModified[%ld], location[%d]\n",root[0]->fileName,root[0]->fileSize,root[0]->dateCreated,root[0]->dateModified,root[0]->location);
-	//printf("DIR ENTRY SIZE[%ld]\n", sizeof(dirEntry));
+	printf("FileName[%s], FIleSize[%d], DateCreated[%ld], DateModified[%ld], location[%d]\n",root[0]->fileName,root[0]->fileSize,root[0]->dateCreated,root[0]->dateModified,root[0]->location);
+	printf("DIR ENTRY SIZE[%ld]\n", sizeof(dirEntry));
 	LBAwrite(root[0], blocksNeeded, rootLocation); 
-	
+	printf("name %ld\n", sizeof(root[0]->fileName));
 	return rootLocation;
 }
 
