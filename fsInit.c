@@ -102,7 +102,7 @@ int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 int initDir(uint64_t blockSize) {
 	int blocksNeeded = 0;
 	int bytesNeeded = 0; 
-	int bytesLeftOver, dirLeftOver = 0;
+	int bytesLeftOver, dirLeftOver, dirEntries = 0;
 	int rootLocation;
 
 	bytesNeeded = (MINDIRENTRIES * sizeof(dirEntry));
@@ -110,15 +110,19 @@ int initDir(uint64_t blockSize) {
 	bytesLeftOver = bytesNeeded % blockSize;
 	printf("BYTES LEFTOVER: [%d]\n", bytesLeftOver);
 	dirLeftOver = bytesLeftOver / sizeof(dirEntry);
+	dirEntries = MINDIRENTRIES + dirLeftOver;
 	printf("DIR LEFTOVER: [%d]\n", dirLeftOver);
 	bytesNeeded += dirLeftOver * sizeof(dirEntry);
 	blocksNeeded = (bytesNeeded / blockSize) + 1;
 	printf("BLOCKS NEEDED: [%d]\n", blocksNeeded);
+	/*
 	dirEntry* root[blocksNeeded * blockSize];
 	for (int i = 0; i < sizeof(root)/sizeof(dirEntry); i++) {
 		root[i] = malloc(sizeof(dirEntry));
 	}
-	
+	*/
+	dirEntry* root = malloc(blocksNeeded * blockSize);
+
 	rootLocation = getFree(blocksNeeded);
 	for(int i = 0; i < blocksNeeded; i++) {
 		setBit(freeSpaceMap, i + rootLocation);
@@ -126,20 +130,21 @@ int initDir(uint64_t blockSize) {
 	
 	LBAwrite(freeSpaceMap, freeSpaceSize, 1);
 
-	strcpy(root[0]->fileName, ".");
-	root[0]->fileSize = blocksNeeded * blockSize;
-	root[0]->dateCreated = time(0);
-	root[0]->dateModified = time(0);
-	root[0]->location = rootLocation;
-	strcpy(root[1]->fileName, "..");
-	root[1]->fileSize = blocksNeeded * blockSize;
-	root[1]->dateCreated = time(0);
-	root[1]->dateModified = time(0);
-	root[1]->location = rootLocation;
-	printf("FileName[%s], FIleSize[%d], DateCreated[%ld], DateModified[%ld], location[%d]\n",root[0]->fileName,root[0]->fileSize,root[0]->dateCreated,root[0]->dateModified,root[0]->location);
-	printf("DIR ENTRY SIZE[%ld]\n", sizeof(dirEntry));
-	LBAwrite(root[0], blocksNeeded, rootLocation); 
-	printf("name %ld\n", sizeof(root[0]->fileName));
+	strcpy(root[0].fileName, ".");
+	root[0].fileSize = blocksNeeded * blockSize;
+	root[0].dateCreated = time(0);
+	root[0].dateModified = time(0);
+	root[0].location = rootLocation;
+	strcpy(root[1].fileName, "..");
+	root[1].fileSize = blocksNeeded * blockSize;
+	root[1].dateCreated = time(0);
+	root[1].dateModified = time(0);
+	root[1].location = rootLocation;
+	printf("FileName[%s], FIleSize[%d], DateCreated[%ld], DateModified[%ld], location[%d]\n",root[0].fileName,root[0].fileSize,root[0].dateCreated,root[0].dateModified,root[0].location);
+	printf("FileName[%s], FIleSize[%d], DateCreated[%ld], DateModified[%ld], location[%d]\n",root[1].fileName,root[1].fileSize,root[1].dateCreated,root[1].dateModified,root[1].location);
+	//printf("DIR ENTRY SIZE[%ld]\n", sizeof(dirEntry));
+	LBAwrite(root, blocksNeeded, rootLocation); 
+	//printf("name %ld\n", sizeof(root[0]->fileName));
 	return rootLocation;
 }
 
