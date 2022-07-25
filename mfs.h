@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "b_io.h"
 
@@ -33,6 +34,7 @@ typedef u_int64_t uint64_t;
 #ifndef uint32_t
 typedef u_int32_t uint32_t;
 #endif
+
 
 // This structure is returned by fs_readdir to provide the caller with information
 // about each file as it iterates through a directory
@@ -88,5 +90,6 @@ struct fs_stat
 
 int fs_stat(const char *path, struct fs_stat *buf);
 
+int initmfs();
 #endif
 

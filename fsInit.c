@@ -126,6 +126,16 @@ int initDir(uint64_t blockSize) {
 
 	dirSize = blocksNeeded * blockSize;
 	root = malloc(dirSize);
+	const char* blank = "";
+	for(int i = 0; i < dirEntries; i++) {
+		strcpy(root[i].fileName, blank);
+		root[i].fileSize = 0;
+		root[i].dateCreated = 0;
+		root[i].dateModified = 0;
+		root[i].location = -1;
+		root[i].isDir = -1;
+		root[i].inUse = 0;
+	}
 
 	rootLocation = getFree(blocksNeeded);
 	for(int i = 0; i < blocksNeeded; i++) {
@@ -148,6 +158,7 @@ int initDir(uint64_t blockSize) {
 	root[1].location = rootLocation;
 	root[1].isDir = 1;
 	root[1].inUse = 1;
+	
 	//printf("FileName[%s], FIleSize[%d], DateCreated[%ld], DateModified[%ld], location[%d]\n",root[0].fileName,root[0].fileSize,root[0].dateCreated,root[0].dateModified,root[0].location);
 	//printf("FileName[%s], FIleSize[%d], DateCreated[%ld], DateModified[%ld], location[%d]\n",root[1].fileName,root[1].fileSize,root[1].dateCreated,root[1].dateModified,root[1].location);
 	//printf("DIR ENTRY SIZE[%ld]\n", sizeof(dirEntry));
@@ -158,7 +169,8 @@ int initDir(uint64_t blockSize) {
 }
 
 void initVCB(uint64_t numberOfBlocks, uint64_t blockSize){
-	vcb = malloc(sizeof(volumeControlBlock));
+	//vcb = malloc(sizeof(volumeControlBlock));
+	vcb = malloc(blockSize);
 	vcb->blockSize = 512; //Size of the blocks
 	vcb->totalBlockCount = 19531;   //Total volume
 	vcb->freeBlocks= vcb->totalBlockCount - initBitMap(numberOfBlocks, blockSize); // Number of free blocks
@@ -177,6 +189,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	/* TODO: Add any code you need to initialize your file system. */
 
 	initVCB(numberOfBlocks,blockSize);
+	initmfs();
 	return 0;
 	}
 	

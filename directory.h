@@ -1,4 +1,8 @@
 #include <string.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include "fsLow.h"
 
 #define MAXFILENAME 32
 
@@ -14,3 +18,5 @@ typedef struct dirEntry{
 
 dirEntry* root;
 int dirEntries, dirSize;
+
+dirEntry* loadDir(dirEntry);
