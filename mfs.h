@@ -17,8 +17,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
+#include <string.h>
 
 #include "b_io.h"
+
 
 #include <dirent.h>
 #define FT_REGFILE	DT_REG
