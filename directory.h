@@ -17,6 +17,8 @@ typedef struct dirEntry{
 }dirEntry;
 
 dirEntry* root;
-int dirEntries, dirSize;
+int dirEntries, dirSize, rootLocation;
 
 dirEntry* loadDir(dirEntry);
+dirEntry* loadRoot();
+void initDir(dirEntry* newDir);

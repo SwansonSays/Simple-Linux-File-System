@@ -20,10 +20,11 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "fsLow.h"
-#include "mfs.h"
 #include "directory.h"
+#include "freeSpace.h"
 
 #define MAXFILENAME 32
 #define MINDIRENTRIES 50
@@ -50,15 +51,17 @@ typedef struct dirEntry{
 	char fileName[MAXFILENAME];
 }dirEntry;
 */
-
+/*
 int freeSpaceSize; //size of bitMap
 unsigned char* freeSpaceMap; 
+*/
 volumeControlBlock * vcb;
 /*
 dirEntry* root;
 int dirEntries;
 */
 
+/*
 void setBit(unsigned char* map, int i)
 	{
 		map[i/8] |= 1 << (i % 8);
@@ -69,11 +72,16 @@ int getBit(unsigned char* map, int i) {
 }
 
 int getFree(int blocksNeeded) {
-	int freeCount, firstFree = 0;
+	int freeCount = 0;
+	int firstFree = 0;
 	for(int i = 0; i < vcb->totalBlockCount; i++) {
+		if(i<10){
+		printf("bit[%d]\n",getBit(freeSpaceMap, i));
+		}
 		if(getBit(freeSpaceMap, i) == 0) {
 			if(freeCount == 0) {
 				firstFree = i;
+				printf("first free [%d]\n",firstFree);
 			}
 			freeCount++;
 			if(freeCount == blocksNeeded) {
@@ -82,14 +90,15 @@ int getFree(int blocksNeeded) {
 		}
 	}
 }
-
+*/
 
 int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 	{
 	//number of blocks needed for freespacemap
 	freeSpaceSize = ((numberOfBlocks / 8) / blockSize) + 1;
     freeSpaceMap = (unsigned char*) malloc(freeSpaceSize * blockSize);
-    
+    totalBlockCount = vcb->totalBlockCount;
+	fs_blockSize = blockSize;
 	//set all bitmap values to 0
 	for(int i = 0; i < freeSpaceSize; i++)
 		{
@@ -108,9 +117,9 @@ int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 	return freeSpaceSize + 1;
 	}
 
-int initDir(uint64_t blockSize) {
-	int blocksNeeded, bytesNeeded, bytesLeftOver, dirLeftOver, rootLocation = 0;
-	dirEntries, dirSize = 0;
+int initRoot(uint64_t blockSize) {
+	int blocksNeeded = 0, bytesNeeded = 0, bytesLeftOver = 0, dirLeftOver = 0;
+	dirEntries = 0, dirSize = 0, rootLocation = 0;
 
 	bytesNeeded = (MINDIRENTRIES * sizeof(dirEntry));
 	//printf("BYTES NEEDED: [%d]\n", bytesNeeded);
@@ -122,7 +131,7 @@ int initDir(uint64_t blockSize) {
 	//printf("DIR ENTRY COUNT: [%d]\n", dirEntries);
 	bytesNeeded += dirLeftOver * sizeof(dirEntry);
 	blocksNeeded = (bytesNeeded / blockSize) + 1;
-	//printf("BLOCKS NEEDED: [%d]\n", blocksNeeded);
+	printf("BLOCKS NEEDED: [%d]\n", blocksNeeded);
 
 	dirSize = blocksNeeded * blockSize;
 	root = malloc(dirSize);
@@ -138,6 +147,7 @@ int initDir(uint64_t blockSize) {
 	}
 
 	rootLocation = getFree(blocksNeeded);
+	printf("Root location[%d]\n", rootLocation);
 	for(int i = 0; i < blocksNeeded; i++) {
 		setBit(freeSpaceMap, i + rootLocation);
 	}
@@ -176,7 +186,7 @@ void initVCB(uint64_t numberOfBlocks, uint64_t blockSize){
 	vcb->freeBlocks= vcb->totalBlockCount - initBitMap(numberOfBlocks, blockSize); // Number of free blocks
 	vcb->bitMapLocation = 1; //Location to the bitmap
 	vcb->bitMapBlocks = freeSpaceSize;       // Number of blocks within the Bitmap
-	vcb->RootDirectory = initDir(blockSize);      // Location of the Root Directory
+	vcb->RootDirectory = initRoot(blockSize);      // Location of the Root Directory
 	vcb->Signature = 0x6e6f74666172;
 	//LBAread(vcb,1,0);
 	LBAwrite(vcb,1,0);
@@ -189,7 +199,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	/* TODO: Add any code you need to initialize your file system. */
 
 	initVCB(numberOfBlocks,blockSize);
-	initmfs();
+	//initmfs();
 	return 0;
 	}
 	

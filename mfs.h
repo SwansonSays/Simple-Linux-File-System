@@ -21,7 +21,8 @@
 #include <stdio.h>
 
 #include "b_io.h"
-
+#include "directory.h"
+#include "freeSpace.h"
 
 #include <dirent.h>
 #define FT_REGFILE	DT_REG
