@@ -81,45 +81,32 @@ parsedPath* parsePath(char* path) {
     while(token) {
         printf("TOKEN: [%s]\n", token);
         pPath->lastElement = nf; //set last element to not found
-        pPath->parentDir = pPath->curDir;
-        // loop through each directory in curDir
         for(int i = 0; i < dirEntries; i++) {
-            //printf("i[%d] FILENAME [%s]\n", i, pPath->curDir[i].fileName);
-            // if token mathches name of file in curDir
-            printf("++++token =[%s] curDir = [%s]\n", token, pPath->curDir[i].fileName);
             if(strcmp(token, pPath->curDir[i].fileName) == 0) {
-                printf("TOKEN[%s] Matches FILENAME[%s]\n",token, pPath->curDir[i].fileName);
                 pPath->index = i;// set index of found file in parent dir
-                // if found file is a directory
                 if(pPath->curDir[i].isDir) {
-                    strcpy(pPath->lastElementName, token); //set name of last element in path to token
                     pPath->lastElement = dir; // mark it as a directory
-                    //printf("printing parent dir in parsePath before assigning\n");
-                    //printDir(pPath->parentDir);
-                    pPath->parentDir = &pPath->curDir[i]; //sets parent directory to current directory before loading found directory
-                    //printf("printing parent dir in parsePath\n");
-                    //printDir(pPath->parentDir);
-                    pPath->curDir = loadDir(pPath->curDir[i]); // load found directory as current directory before testing next token in path
-                    printf("=====Printing after Loading Dir=====\n");
-                    printDir(pPath->curDir);
-                    printf("=====Printing Finished=====\n");
-                    
+                    pPath->curDir = loadDir(pPath->curDir[i].location, pPath->curDir[i].fileSize); // load found directory as current directory before testing next token in path
                 } else {
                     pPath->lastElement = file; // mark is as file
-                    strcpy(pPath->lastElementName, token); //set name of last element in path to token
                 }
                 break;
+            } else {
+                pPath->lastElement = nf;
             }
         }
         strcpy(pPath->lastElementName, token); //set name of last element in path to token
         token = strtok(NULL, "/");
     }
+    pPath->parentDir = loadDir(pPath->curDir[1].location, pPath->curDir[1].fileSize);
     if(pPath->lastElement == 2) {
         pPath->isPath = 0; //if last element in path was not found set isPath to 0
     } else {
         pPath->isPath = 1; //if file or dir set to 1;
     }
-    printf("****Finished Parsing****\n");
+    printf("=====Printing after ParsePath=====\n");
+    printDir(pPath->curDir);
+    printf("=====Printing Finished=====\n");
     return pPath;
 }
 
@@ -154,13 +141,14 @@ int fs_setcwd(char *buf) {
 
 int fs_mkdir(const char *pathname, mode_t mode) {
     int location = 0;
-    char *path[MAXFILENAME];
-    //strcpy(path, pathname);
+
     parsedPath* pPath = parsePath((char *)pathname);
+    /*
     printf("FINSIHED PARSING IN MKDIR\n");
     printf("Printing parent dir after parsing\n");
     printDir(pPath->parentDir);
     //printParsedPath(pPath);
+    */
     if(pPath->lastElement == nf) {
         dirEntry* newDir = malloc(dirSize);
         initDir(newDir); // initilizing each entry in new directory to init state
@@ -182,33 +170,34 @@ int fs_mkdir(const char *pathname, mode_t mode) {
 
         //sets second entry of new directory to parent directorys info for ..
         strcpy(newDir[1].fileName, "..");
-        printf("ERROR CHECK: [%d]\n",pPath->parentDir[0].fileSize);
-	    newDir[1].fileSize = pPath->parentDir[0].fileSize;
-	    newDir[1].dateCreated = pPath->parentDir[0].dateCreated;
-	    newDir[1].dateModified = pPath->parentDir[0].dateModified;
-	    newDir[1].location = pPath->parentDir[0].location;
-	    newDir[1].isDir = pPath->parentDir[0].isDir;
-	    newDir[1].inUse = pPath->parentDir[0].inUse;
+
+	    newDir[1].fileSize = pPath->curDir[0].fileSize;
+	    newDir[1].dateCreated = pPath->curDir[0].dateCreated;
+	    newDir[1].dateModified = pPath->curDir[0].dateModified;
+	    newDir[1].location = pPath->curDir[0].location;
+	    newDir[1].isDir = pPath->curDir[0].isDir;
+	    newDir[1].inUse = pPath->curDir[0].inUse;
 
         //creates new directory in parent directory if index is not in use
         for(int i = 0; i < dirEntries; i++) {
-            if(pPath->parentDir[i].inUse == 0) {
-                strcpy(pPath->parentDir[i].fileName, pPath->lastElementName);
-                pPath->parentDir[i].fileSize = dirSize;
-                pPath->parentDir[i].dateCreated = time(0);
-                pPath->parentDir[i].dateModified = time(0);
-                pPath->parentDir[i].location = location;
-                pPath->parentDir[i].isDir = 1;
-                pPath->parentDir[i].inUse = 1;
+            if(pPath->curDir[i].inUse == 0) {
+                strcpy(pPath->curDir[i].fileName, pPath->lastElementName);
+                pPath->curDir[i].fileSize = dirSize;
+                pPath->curDir[i].dateCreated = time(0);
+                pPath->curDir[i].dateModified = time(0);
+                pPath->curDir[i].location = location;
+                pPath->curDir[i].isDir = 1;
+                pPath->curDir[i].inUse = 1;
                 break;
             }
         }
+        /*
         printDir(newDir);
         printDir(pPath->parentDir);
-
+        */
         char* writeDir = (char*) newDir;
         LBAwrite(writeDir,dirSize/fs_blockSize, location);
-        writeDir = (char*) pPath->parentDir;
+        writeDir = (char*) pPath->curDir;
         LBAwrite(writeDir,dirSize/fs_blockSize, newDir[1].location);
     }
     freepPath(pPath);
@@ -232,4 +221,30 @@ int fs_isDir(char* path) {
     }
     freepPath(pPath);
     return 0;
+}
+
+int fs_rmdir(const char *pathname) {
+    printf("in rmdir\n");
+    int isEmpty = 0;
+    parsedPath* pPath = parsePath((char *)pathname);
+    if(pPath->lastElement == 0) {
+        printf("in first if\n");
+        for(int i = 0; i < dirEntries; i++) {
+            if(pPath->curDir[i].inUse == 1) {
+                printf("in Second if\n");
+                //empty check isnt working
+                if(strcmp(pPath->curDir[i].fileName, ".") != 0 || strcmp(pPath->curDir[i].fileName, "..") != 0) {
+                    printf("in thrid if\n");
+                    printf("INDEX[%d]\n", pPath->index);
+                    removeDir(pPath->parentDir, pPath->index);
+                } else {
+                    printf("Directory %s is not empty. Directory must be empty to be deleted.\n", pPath->lastElementName);
+                }
+            }
+        }
+    }
+}
+
+int fs_delete(char* filename) {
+
 }

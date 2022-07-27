@@ -1,8 +1,8 @@
 #include "directory.h"
 
-dirEntry* loadDir(dirEntry dir) {
+dirEntry* loadDir(int location, int fileSize) {
     dirEntry* lDir = malloc(dirSize);
-    LBAread(lDir,(dir.fileSize / 512), dir.location);
+    LBAread(lDir,(fileSize / 512), location);
     return lDir;
 }
 
@@ -25,4 +25,22 @@ void initDir(dirEntry* newDir) {
         newDir[i].isDir = -1;
         newDir[i].inUse = 0;
     }
+}
+
+int removeDir(dirEntry* parent, int index) {
+    char* blank = "";
+    printf ("inRemoveDir parent name [%s]\n", parent->fileName);
+    printf ("inRemoveDir parent location [%d]\n", parent->location);
+    strcpy(parent[index].fileName, blank);
+    parent[index].fileSize = 0;
+    parent[index].dateCreated = 0;
+    parent[index].dateModified = 0;
+    parent[index].location = -1;
+    parent[index].isDir = -1;
+    parent[index].inUse = 0;
+    // free bits
+    char* writeDir = (char*) parent;
+    printf("LOCATION TO WRITE [%d]\n", parent[0].location);
+    LBAwrite(writeDir,dirSize/512, parent[0].location);
+    return 1;
 }
