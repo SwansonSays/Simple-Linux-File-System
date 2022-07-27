@@ -70,6 +70,7 @@ parsedPath* parsePath(char* path) {
     printf("***[%s]***\n", path);
 
     char* token; //token for strtok()
+    char* saveptr;
     parsedPath* pPath = initpPath(); //allocate memory for parsedPath struct
     pPath->curDir = loadRoot();
 
@@ -77,7 +78,7 @@ parsedPath* parsePath(char* path) {
     printDir(pPath->curDir);
     printf("=====Printing Finished=====\n");
 
-    token = strtok(path, "/"); //tokenize path using '/' delim
+    token = strtok_r(path, "/", &saveptr); //tokenize path using '/' delim
     while(token) {
         printf("TOKEN: [%s]\n", token);
         pPath->lastElement = nf; //set last element to not found
@@ -96,7 +97,8 @@ parsedPath* parsePath(char* path) {
             }
         }
         strcpy(pPath->lastElementName, token); //set name of last element in path to token
-        token = strtok(NULL, "/");
+        printf("Last element Name [%s] | token [%s]\n", pPath->lastElementName,token);
+        token = strtok_r(NULL, "/", &saveptr);
     }
     pPath->parentDir = loadDir(pPath->curDir[1].location, pPath->curDir[1].fileSize);
     if(pPath->lastElement == 2) {
@@ -107,6 +109,7 @@ parsedPath* parsePath(char* path) {
     printf("=====Printing after ParsePath=====\n");
     printDir(pPath->curDir);
     printf("=====Printing Finished=====\n");
+    printf("PATH[%s]\n", path);
     return pPath;
 }
 
@@ -124,7 +127,11 @@ char* fs_getcwd(char *buf, size_t size) {
 int fs_setcwd(char *buf) {
     printf("fs_setcwd() called\n");
     printf("attmepting to move to [%s]\n", buf);
-    parsedPath* pPath = parsePath(buf);
+    char* copy = (char*)malloc(strlen(buf) + 1);
+    strcpy(copy, buf);
+    parsedPath* pPath = parsePath(copy);
+    free(copy);
+
     printParsedPath(pPath);
     //if the last element of the path is a directory move cwd to that directory
     if(pPath->lastElement == dir) {
@@ -141,8 +148,11 @@ int fs_setcwd(char *buf) {
 
 int fs_mkdir(const char *pathname, mode_t mode) {
     int location = 0;
-
-    parsedPath* pPath = parsePath((char *)pathname);
+    char* copy = (char*)malloc(strlen(pathname) + 1);
+    strcpy(copy, pathname);
+    parsedPath* pPath = parsePath(copy);
+    free(copy);
+     printParsedPath(pPath);
     /*
     printf("FINSIHED PARSING IN MKDIR\n");
     printf("Printing parent dir after parsing\n");
@@ -204,7 +214,10 @@ int fs_mkdir(const char *pathname, mode_t mode) {
 }
 
 int fs_isFile(char* path) {
-    parsedPath* pPath = parsePath(path);
+    char* copy = (char*)malloc(strlen(path) + 1);
+    strcpy(copy, path);
+    parsedPath* pPath = parsePath(copy);
+    free(copy);
     if(pPath->lastElement == 1) {
         freepPath(pPath);
         return 1;
@@ -214,7 +227,10 @@ int fs_isFile(char* path) {
 }
 
 int fs_isDir(char* path) {
-    parsedPath* pPath = parsePath(path);
+    char* copy = (char*)malloc(strlen(path) + 1);
+    strcpy(copy, path);
+    parsedPath* pPath = parsePath(copy);
+    free(copy);
     if(pPath->lastElement == 0) {
         freepPath(pPath);
         return 1;
@@ -225,22 +241,22 @@ int fs_isDir(char* path) {
 
 int fs_rmdir(const char *pathname) {
     printf("in rmdir\n");
-    int isEmpty = 0;
-    parsedPath* pPath = parsePath((char *)pathname);
+    char* copy = (char*)malloc(strlen(pathname) + 1);
+    strcpy(copy, pathname);
+    parsedPath* pPath = parsePath(copy);
+    free(copy);
+
+    printParsedPath(pPath);
+
     if(pPath->lastElement == 0) {
-        printf("in first if\n");
-        for(int i = 0; i < dirEntries; i++) {
-            if(pPath->curDir[i].inUse == 1) {
-                printf("in Second if\n");
-                //empty check isnt working
-                if(strcmp(pPath->curDir[i].fileName, ".") != 0 || strcmp(pPath->curDir[i].fileName, "..") != 0) {
-                    printf("in thrid if\n");
-                    printf("INDEX[%d]\n", pPath->index);
-                    removeDir(pPath->parentDir, pPath->index);
-                } else {
-                    printf("Directory %s is not empty. Directory must be empty to be deleted.\n", pPath->lastElementName);
-                }
+        if(isEmpty(pPath->curDir)) {
+            removeDir(pPath->parentDir, pPath->index);
+            for(int i = 0; i < dirSize / fs_blockSize; i++) {
+                clearBit(freeSpaceMap, i + pPath->curDir[0].location);
             }
+            LBAwrite(freeSpaceMap, freeSpaceSize, 1);
+        } else {
+            printf("Directory %s is not empty. Directory must be empty to be deleted.\n", pPath->lastElementName);
         }
     }
 }

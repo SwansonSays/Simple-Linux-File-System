@@ -23,3 +23,4 @@ dirEntry* loadDir(int location, int fileSize);
 dirEntry* loadRoot();
 void initDir(dirEntry* newDir);
 int removeDir(dirEntry* parent, int index);
+int isEmpty(dirEntry* dir);

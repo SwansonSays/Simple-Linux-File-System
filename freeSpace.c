@@ -1,9 +1,8 @@
 #include "freeSpace.h"
 
-void setBit(unsigned char* map, int i)
-	{
-		map[i/8] |= 1 << (i % 8);
-	}
+void setBit(unsigned char* map, int i) {
+	map[i/8] |= 1 << (i % 8);
+}
 
 int getBit(unsigned char* map, int i) {
 	return map[i/8] & (1 << (i % 8)) != 0;
@@ -27,4 +26,8 @@ int getFree(int blocksNeeded) {
 			}
 		}
 	}
+}
+
+void clearBit(unsigned char* map, int i) {
+	map[i/8] &= ~(1 << (i % 8));
 }
