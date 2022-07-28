@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "b_io.h"
+#include "mfs.h"
 
 #define MAXFCBS 20
 #define B_CHUNK_SIZE 512
@@ -30,6 +31,9 @@ typedef struct b_fcb
 	char * buf;		//holds the open file buffer
 	int index;		//holds the current position in the buffer
 	int buflen;		//holds how many valid bytes are in the buffer
+	fileInfo* fi;	//holds file info
+	int flags;		//holds flags ie RD_ONLY, WR_ONLY
+	int fileOffset	//holds the current position in the file
 	} b_fcb;
 	
 b_fcb fcbArray[MAXFCBS];
@@ -67,16 +71,34 @@ b_io_fd b_getFCB ()
 b_io_fd b_open (char * filename, int flags)
 	{
 	b_io_fd returnFd;
+	b_fcb* fcb;
 
 	//*** TODO ***:  Modify to save or set any information needed
 	//
 	//
-		
+
 	if (startup == 0) b_init();  //Initialize our system
 	
 	returnFd = b_getFCB();				// get our own file descriptor
-										// check for error - all used FCB's
+	if(returnFd == -1) {				// check for error - all used FCB's
+		return -1;
+	}									
+
+	fcb = &fcbArray[returnFd];
+	fcb->buf = malloc(B_CHUNK_SIZE);
+	fcb->buflen = 0;
+	fcb->index = 0;
+	fcb->flags = flags;
+	fcb->fileOffset = 0;
+	printf("Flag [%d]\n", flags);
 	
+	//Check if create flag is set
+	if(flags & (1 << 6)) {
+		printf("Create is set\n");
+		fcb->fi = getFileInfo(filename, 1);
+	} else {
+		fcb->fi = getFileInfo(filename, 0);
+	}
 	return (returnFd);						// all set
 	}
 
@@ -92,8 +114,16 @@ int b_seek (b_io_fd fd, off_t offset, int whence)
 		return (-1); 					//invalid file descriptor
 		}
 		
-		
-	return (0); //Change this
+	if(whence == SEEK_SET) {
+		fcbArray[fd].fileOffset = offset;
+	} else if(whence == SEEK_CUR) {
+		fcbArray[fd].fileOffset += offset;
+	} else if(whence == SEEK_END) {
+		fcbArray[fd].fileOffset = fcbArray[fd].fi->fileSize + offset;
+	} else {
+		return -1;
+	}	
+	return (fcbArray[fd].fileOffset); //Change this
 	}
 
 
@@ -108,7 +138,8 @@ int b_write (b_io_fd fd, char * buffer, int count)
 		{
 		return (-1); 					//invalid file descriptor
 		}
-		
+
+
 		
 	return (0); //Change this
 	}
@@ -151,5 +182,7 @@ int b_read (b_io_fd fd, char * buffer, int count)
 // Interface to Close the file	
 int b_close (b_io_fd fd)
 	{
-
+		free(fcbArray[fd].fi);
+		free(fcbArray[fd].buf);
+		fcbArray[fd].buf = NULL;
 	}

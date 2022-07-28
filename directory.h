@@ -16,6 +16,12 @@ typedef struct dirEntry{
 	char fileName[MAXFILENAME];
 }dirEntry;
 
+typedef struct fileInfo {
+	int fileSize;
+	int location;
+	char fileName[MAXFILENAME];
+}fileInfo;
+
 dirEntry* root;
 int dirEntries, dirSize, rootLocation;
 

@@ -262,5 +262,34 @@ int fs_rmdir(const char *pathname) {
 }
 
 int fs_delete(char* filename) {
+    char* copy = (char*)malloc(strlen(filename) + 1);
+    strcpy(copy, filename);
+    parsedPath* pPath = parsePath(copy);
+    free(copy);
 
+    if(pPath->lastElement == 1) {
+        
+    }
+}
+
+fileInfo* getFileInfo(char* path, int create) {
+    fileInfo* fi;
+    char* copy = (char*)malloc(strlen(path) + 1);
+    strcpy(copy, path);
+    parsedPath* pPath = parsePath(copy);
+    free(copy);
+
+    if(pPath->lastElement == file) {
+        fi = malloc(sizeof(fileInfo));
+        strcpy(fi->fileName,pPath->lastElementName);
+        fi->fileSize = pPath->curDir->fileSize;
+        fi->location = pPath->curDir->location;
+    } else if(pPath->lastElement == nf && create == 1) {
+        //make file
+        //fill file info
+    } else {
+        fi = NULL;
+    }
+
+    return fi;
 }

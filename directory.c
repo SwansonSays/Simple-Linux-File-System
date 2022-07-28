@@ -56,3 +56,4 @@ int isEmpty(dirEntry* dir) {
     }
     return 1; // return 1 if empty besides '.' and '..'
 }
+
