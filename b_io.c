@@ -139,9 +139,19 @@ int b_write (b_io_fd fd, char * buffer, int count)
 		return (-1); 					//invalid file descriptor
 		}
 
+	int bytesWritten = 0;
 
+	while(count > B_CHUNK_SIZE) {
+		memcpy(fcbArray[fd].buf, buffer + fcbArray[fd].fileOffset, B_CHUNK_SIZE);
+		LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].fi->location + (bytesWritten / fs_blockSize));
+		fcbArray[fd].fileOffset += B_CHUNK_SIZE;
+		count = count - fcbArray[fd].fileOffset;
+		bytesWritten += B_CHUNK_SIZE;
+	}
+	memcpy(fcbArray[fd].buf, buffer + fcbArray[fd].fileOffset, count);
+	LBAwrite(fcbArray[fd].buf,1,fcbArray[fd].fi->location + (bytesWritten / fs_blockSize));
 		
-	return (0); //Change this
+	return (bytesWritten); //Change this
 	}
 
 
