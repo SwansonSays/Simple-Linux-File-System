@@ -33,7 +33,9 @@ typedef struct b_fcb
 	int buflen;		//holds how many valid bytes are in the buffer
 	fileInfo* fi;	//holds file info
 	int flags;		//holds flags ie RD_ONLY, WR_ONLY
-	int fileOffset	//holds the current position in the file
+	int fileOffset;	//holds the current position in the file
+	int currentBlk;
+	int numBlocks;
 	} b_fcb;
 	
 b_fcb fcbArray[MAXFCBS];
@@ -71,7 +73,7 @@ b_io_fd b_getFCB ()
 b_io_fd b_open (char * filename, int flags)
 	{
 	b_io_fd returnFd;
-	b_fcb* fcb;
+	fileInfo* fi;
 
 	//*** TODO ***:  Modify to save or set any information needed
 	//
@@ -82,23 +84,32 @@ b_io_fd b_open (char * filename, int flags)
 	returnFd = b_getFCB();				// get our own file descriptor
 	if(returnFd == -1) {				// check for error - all used FCB's
 		return -1;
-	}									
-
-	fcb = &fcbArray[returnFd];
-	fcb->buf = malloc(B_CHUNK_SIZE);
-	fcb->buflen = 0;
-	fcb->index = 0;
-	fcb->flags = flags;
-	fcb->fileOffset = 0;
-	printf("Flag [%d]\n", flags);
-	
+	}		
 	//Check if create flag is set
 	if(flags & (1 << 6)) {
 		printf("Create is set\n");
-		fcb->fi = getFileInfo(filename, 1);
+		fi = getFileInfo(filename, 1); //check for null
 	} else {
-		fcb->fi = getFileInfo(filename, 0);
+		fi = getFileInfo(filename, 0);
 	}
+
+	if(fi == NULL) {
+		return -2;
+	}			
+		
+
+	fcbArray[returnFd].fi = fi;
+	fcbArray[returnFd].buf = malloc(fs_blockSize);
+	fcbArray[returnFd].buflen = 0;
+	fcbArray[returnFd].index = 0;
+	fcbArray[returnFd].flags = flags;
+	fcbArray[returnFd].fileOffset = 0;
+	fcbArray[returnFd].currentBlk = 0;
+	fcbArray[returnFd].numBlocks = (fi->fileSize + (fs_blockSize - 1)) / fs_blockSize;
+
+	printf("Flag [%d]\n", flags);
+	
+	
 	return (returnFd);						// all set
 	}
 
@@ -131,6 +142,7 @@ int b_seek (b_io_fd fd, off_t offset, int whence)
 // Interface to write function	
 int b_write (b_io_fd fd, char * buffer, int count)
 	{
+	printf("b_write called for fd[%d] to move [%d] bytes which are [%s]\n",fd,count,buffer);
 	if (startup == 0) b_init();  //Initialize our system
 
 	// check that fd is between 0 and (MAXFCBS-1)
@@ -141,12 +153,12 @@ int b_write (b_io_fd fd, char * buffer, int count)
 
 	int bytesWritten = 0;
 
-	while(count > B_CHUNK_SIZE) {
-		memcpy(fcbArray[fd].buf, buffer + fcbArray[fd].fileOffset, B_CHUNK_SIZE);
+	while(count > fs_blockSize) {
+		memcpy(fcbArray[fd].buf, buffer + fcbArray[fd].fileOffset, fs_blockSize);
 		LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].fi->location + (bytesWritten / fs_blockSize));
-		fcbArray[fd].fileOffset += B_CHUNK_SIZE;
+		fcbArray[fd].fileOffset += fs_blockSize;
 		count = count - fcbArray[fd].fileOffset;
-		bytesWritten += B_CHUNK_SIZE;
+		bytesWritten += fs_blockSize;
 	}
 	memcpy(fcbArray[fd].buf, buffer + fcbArray[fd].fileOffset, count);
 	LBAwrite(fcbArray[fd].buf,1,fcbArray[fd].fi->location + (bytesWritten / fs_blockSize));
@@ -177,6 +189,12 @@ int b_write (b_io_fd fd, char * buffer, int count)
 //  +-------------+------------------------------------------------+--------+
 int b_read (b_io_fd fd, char * buffer, int count)
 	{
+	printf("b_read called for fd [%d] for [%d] bytes which are [%s]\n",fd,count,buffer);
+	int bytesRead;
+	int bytesReturned;
+	int part1, part2, part3;
+	int numberOfBlocksToCopy;
+	int remainingBytesInMyBuffer;
 
 	if (startup == 0) b_init();  //Initialize our system
 
@@ -185,8 +203,72 @@ int b_read (b_io_fd fd, char * buffer, int count)
 		{
 		return (-1); 					//invalid file descriptor
 		}
-		
-	return (0);	//Change this
+	
+	if (fcbArray[fd].fi == NULL) {
+		return -1;
+	}
+
+	printf("File Size [%d]\n", fcbArray[fd].fi->fileSize);
+
+	remainingBytesInMyBuffer = fcbArray[fd].buflen - fcbArray[fd].index;
+	printf("remaining BYtes [%d]\n", remainingBytesInMyBuffer);
+	
+	int amountDelivered = (fcbArray[fd].currentBlk * fs_blockSize) - remainingBytesInMyBuffer;
+	printf("almount delivered [%d]\n", amountDelivered);
+
+	if((count + amountDelivered) > fcbArray[fd].fi->fileSize) {
+		count = fcbArray[fd].fi->fileSize - amountDelivered;
+
+		if(count < 0) {
+			//error
+		}
+	}
+
+	//Part 1
+	if(remainingBytesInMyBuffer >= count) {
+		part1 = count;
+		part2 = 0;
+		part3 = 0;
+	} else {
+		part1 = remainingBytesInMyBuffer;
+
+		part3 = count - remainingBytesInMyBuffer;
+
+		numberOfBlocksToCopy = part3 / fs_blockSize;
+		part2 = numberOfBlocksToCopy * fs_blockSize;
+
+		part3 = part3 - part2;
+	}
+
+	if (part1 > 0) {
+		memcpy(buffer, fcbArray[fd].buf + fcbArray[fd].index, part1);
+		fcbArray[fd].index += part1;
+	}
+
+	if(part2 > 0) {
+		bytesRead = LBAread(buffer+part1, numberOfBlocksToCopy, fcbArray[fd].currentBlk + fcbArray[fd].fi->location) * fs_blockSize;
+		fcbArray[fd].currentBlk += numberOfBlocksToCopy;
+		part2 = bytesRead;
+	}
+
+	if(part3 > 0) {
+		bytesRead = LBAread(fcbArray[fd].buf, 1, fcbArray[fd].currentBlk + fcbArray[fd].fi->location) * fs_blockSize;
+		fcbArray[fd].currentBlk += 1;
+
+		fcbArray[fd].index = 0;
+		fcbArray[fd].buflen = bytesRead;
+
+		if(bytesRead < part3) {
+			part3 = bytesRead;
+		}
+		if(part3 > 0) {
+			memcpy(buffer + part1 + part2, fcbArray[fd].buf + fcbArray[fd].index, part3);
+			fcbArray[fd].index = fcbArray[fd].index + part3;
+		}
+	}
+	bytesReturned = part1 + part2 + part3;
+	
+	return (bytesReturned);	//Change this
 	}
 	
 // Interface to Close the file	

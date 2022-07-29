@@ -9,7 +9,7 @@ dirEntry* loadDir(int location, int fileSize) {
 dirEntry* loadRoot() {
     dirEntry* dir = malloc(dirSize);
     LBAread(dir,(dirSize / 512), rootLocation);
-    printf("blocks to read[%d]\n",dirSize/512);
+    //printf("blocks to read[%d]\n",dirSize/512);
     return dir;
 }
 
@@ -29,9 +29,9 @@ void initDir(dirEntry* newDir) {
 
 int removeDir(dirEntry* parent, int index) {
     char* blank = "";
-    printf ("inRemoveDir parent name [%s]\n", parent[index].fileName);
-    printf ("inRemoveDir parent location [%d]\n", parent[index].location);
-    printf ("inRemoveDir index in parent [%d]\n", index);
+    //printf ("inRemoveDir parent name [%s]\n", parent[index].fileName);
+    //printf ("inRemoveDir parent location [%d]\n", parent[index].location);
+    //printf ("inRemoveDir index in parent [%d]\n", index);
 
     strcpy(parent[index].fileName, blank);
     parent[index].fileSize = 0;
@@ -42,7 +42,7 @@ int removeDir(dirEntry* parent, int index) {
     parent[index].inUse = 0;
 
     char* writeDir = (char*) parent;
-    printf("LOCATION TO WRITE [%d]\n", parent[0].location);
+    //printf("LOCATION TO WRITE [%d]\n", parent[0].location);
     LBAwrite(writeDir,dirSize/512, parent[0].location);
     return 1;
 }
