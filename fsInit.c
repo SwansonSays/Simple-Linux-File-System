@@ -181,8 +181,8 @@ int initRoot(uint64_t blockSize) {
 void initVCB(uint64_t numberOfBlocks, uint64_t blockSize){
 	//vcb = malloc(sizeof(volumeControlBlock));
 	vcb = malloc(blockSize);
-	vcb->blockSize = 512; //Size of the blocks
-	vcb->totalBlockCount = 19531;   //Total volume
+	vcb->blockSize = blockSize; //Size of the blocks
+	vcb->totalBlockCount = numberOfBlocks;   //Total volume
 	vcb->freeBlocks= vcb->totalBlockCount - initBitMap(numberOfBlocks, blockSize); // Number of free blocks
 	vcb->bitMapLocation = 1; //Location to the bitmap
 	vcb->bitMapBlocks = freeSpaceSize;       // Number of blocks within the Bitmap
