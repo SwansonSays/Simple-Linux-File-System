@@ -96,5 +96,6 @@ struct fs_stat
 int fs_stat(const char *path, struct fs_stat *buf);
 
 int initmfs();
+fileInfo* getFileInfo(char* path, int create);
 #endif
 

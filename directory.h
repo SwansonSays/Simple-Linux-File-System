@@ -16,6 +16,12 @@ typedef struct dirEntry{
 	char fileName[MAXFILENAME];
 }dirEntry;
 
+typedef struct fileInfo {
+	int fileSize;
+	int location;
+	char fileName[MAXFILENAME];
+}fileInfo;
+
 dirEntry* root;
 int dirEntries, dirSize, rootLocation;
 
@@ -23,3 +29,4 @@ dirEntry* loadDir(int location, int fileSize);
 dirEntry* loadRoot();
 void initDir(dirEntry* newDir);
 int removeDir(dirEntry* parent, int index);
+int isEmpty(dirEntry* dir);
