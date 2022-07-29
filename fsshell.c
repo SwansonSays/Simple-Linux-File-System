@@ -495,9 +495,11 @@ int cmd_cp2fs (int argcnt, char *argvec[])
 	
 	testfs_fd = b_open (dest, O_WRONLY | O_CREAT | O_TRUNC);
 	linux_fd = open (src, O_RDONLY);
+	printf("linux fd[%d]\n", linux_fd);
 	do 
 		{
 		readcnt = read (linux_fd, buf, BUFFERLEN);
+		printf("readcnt[%d]\n",readcnt);
 		b_write (testfs_fd, buf, readcnt);
 		} while (readcnt == BUFFERLEN);
 	b_close (testfs_fd);

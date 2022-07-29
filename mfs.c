@@ -348,13 +348,16 @@ fileInfo* getFileInfo(char* path, int create) {
     parsedPath* pPath = parsePath(copy);
     free(copy);
 
+    //printParsedPath(pPath);
+
     if(pPath->lastElement == file) {
         fi = malloc(sizeof(fileInfo));
         strcpy(fi->fileName,pPath->lastElementName);
-        fi->fileSize = pPath->curDir->fileSize;
-        fi->location = pPath->curDir->location;
+        fi->fileSize = pPath->curDir[pPath->index].fileSize;
+        fi->location = pPath->curDir[pPath->index].location;
     } else if(pPath->lastElement == nf && create == 1) {
         fi = makeFile(pPath);
+        printf("Finished makeFile()\n");
     } else {
         fi = NULL;
     }

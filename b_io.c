@@ -96,6 +96,8 @@ b_io_fd b_open (char * filename, int flags)
 	if(fi == NULL) {
 		return -2;
 	}			
+
+	printf("FI: fd[%d], name[%s], fileSize[%d], location[%d]\n", returnFd, fi->fileName, fi->fileSize, fi->location);
 		
 
 	fcbArray[returnFd].fi = fi;
@@ -152,14 +154,18 @@ int b_write (b_io_fd fd, char * buffer, int count)
 		}
 
 	int bytesWritten = 0;
-
+	printf("before write loop\n");
+	printf("Count[%d] > fs_blockSize[%d]\n",count,fs_blockSize);
 	while(count > fs_blockSize) {
+		printf("in write loop\n");
 		memcpy(fcbArray[fd].buf, buffer + fcbArray[fd].fileOffset, fs_blockSize);
 		LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].fi->location + (bytesWritten / fs_blockSize));
 		fcbArray[fd].fileOffset += fs_blockSize;
 		count = count - fcbArray[fd].fileOffset;
 		bytesWritten += fs_blockSize;
 	}
+	printf("finished write loop\n");
+	printf("write before memcpy offset[%d] count[%d]",fcbArray[fd].fileOffset, count);
 	memcpy(fcbArray[fd].buf, buffer + fcbArray[fd].fileOffset, count);
 	LBAwrite(fcbArray[fd].buf,1,fcbArray[fd].fi->location + (bytesWritten / fs_blockSize));
 		
