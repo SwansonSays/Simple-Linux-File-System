@@ -36,7 +36,7 @@ typedef struct fileInfo {
 
 
 dirEntry* root;
-int dirEntries, dirSize, rootLocation;
+int dirEntries, dirSize, rootLocation, dir_blockSize;
 
 dirEntry* loadDir(int location, int fileSize);
 dirEntry* loadRoot();

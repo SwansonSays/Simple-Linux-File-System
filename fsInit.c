@@ -119,7 +119,7 @@ int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 
 int initRoot(uint64_t blockSize) {
 	int blocksNeeded = 0, bytesNeeded = 0, bytesLeftOver = 0, dirLeftOver = 0;
-	dirEntries = 0, dirSize = 0, rootLocation = 0;
+	dirEntries = 0, dirSize = 0, rootLocation = 0, dir_blockSize = 0;
 
 	bytesNeeded = (MINDIRENTRIES * sizeof(dirEntry));
 	//printf("BYTES NEEDED: [%d]\n", bytesNeeded);
@@ -132,7 +132,7 @@ int initRoot(uint64_t blockSize) {
 	bytesNeeded += dirLeftOver * sizeof(dirEntry);
 	blocksNeeded = (bytesNeeded / blockSize) + 1;
 	printf("BLOCKS NEEDED: [%d]\n", blocksNeeded);
-
+	dir_blockSize = blockSize;
 	dirSize = blocksNeeded * blockSize;
 	root = malloc(dirSize);
 	const char* blank = "";
@@ -181,7 +181,7 @@ int initRoot(uint64_t blockSize) {
 void initVCB(uint64_t numberOfBlocks, uint64_t blockSize){
 	//vcb = malloc(sizeof(volumeControlBlock));
 	vcb = malloc(blockSize);
-	vcb->blockSize = 512; //Size of the blocks
+	vcb->blockSize = blockSize; //Size of the blocks
 	vcb->totalBlockCount = 19531;   //Total volume
 	vcb->freeBlocks= vcb->totalBlockCount - initBitMap(numberOfBlocks, blockSize); // Number of free blocks
 	vcb->bitMapLocation = 1; //Location to the bitmap
