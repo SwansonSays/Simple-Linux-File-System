@@ -7,11 +7,11 @@ int isInit = 0;
 
 //init MFS and sets cwd to root
 int initmfs() {
-    printf("----Initializing MFS----\n");
+    //printf("----Initializing MFS----\n");
     isInit = 1;
     cwd = malloc(dirSize);
     if (fs_setcwd("/") == 0) {
-        printf("----Finished Initializing----\n");
+        //printf("----Finished Initializing----\n");
         return 0;
     }
     return 1;
@@ -42,14 +42,14 @@ void printDir(dirEntry* dir) {
 char* makeAbsolute(char* path) {
     char newPath[MAXFILEPATH];
     strcpy(newPath, "/");
-    printf("in MA\n");
+    //printf("in MA\n");
 
     path = strcat(newPath, path);
     if(strcmp(cwdPath, "/") != 0) {
         path = strcat(cwdPath,path);
     }
     
-    printf("MA PATH[%s]\n", path);
+    //printf("MA PATH[%s]\n", path);
     return path;
 }
 
@@ -79,7 +79,7 @@ parsedPath* parsePath(char* path) {
     parsedPath* pPath = initpPath(); //allocate memory for parsedPath struct
     pPath->curDir = loadRoot();
 
-    printf("first char of path[%c]\n",path[0]);
+    //printf("first char of path[%c]\n",path[0]);
     
     if(strcmp(path, "..") == 0) {
 
@@ -122,7 +122,7 @@ parsedPath* parsePath(char* path) {
         pPath->isPath = 1; //if file or dir set to 1;
     }
     //printf("=====Printing after ParsePath=====\n");
-    printDir(pPath->curDir);
+    //printDir(pPath->curDir);
    // printf("=====Printing Finished=====\n");
     //printf("PATH[%s]\n", path);
     return pPath;
@@ -336,7 +336,7 @@ fileInfo* makeFile(parsedPath* pPath) {
     setBit(freeSpaceMap, location);
     LBAwrite(freeSpaceMap, freeSpaceSize, 1);
 
-    printf("IN MAKEFILE\n");
+    //printf("IN MAKEFILE\n");
     //printParsedPath(pPath);
 
     //Finds free entry in parent dir
@@ -382,7 +382,7 @@ fileInfo* getFileInfo(char* path, int flags) {
     parsedPath* pPath = parsePath(copy);
     free(copy);
 
-    printParsedPath(pPath);
+    //printParsedPath(pPath);
 
     if(pPath->lastElement == file && (flags & (1 << 9))) { //truncates file if found
         fi = malloc(sizeof(fileInfo));
@@ -396,7 +396,7 @@ fileInfo* getFileInfo(char* path, int flags) {
         fi->location = pPath->curDir[pPath->index].location;
     } else if(pPath->lastElement == nf && (flags & (1 << 6))) { //creates file if not found
         fi = makeFile(pPath); 
-        printf("Finished makeFile()\n");
+        //printf("Finished makeFile()\n");
     } else {
         fi = NULL;
     }
@@ -406,7 +406,7 @@ fileInfo* getFileInfo(char* path, int flags) {
 
 //Sets size in file info
 void setFileSize(fileInfo* fi, int size) {
-    printf("set file info called size[%d]\n",size);
+    //printf("set file info called size[%d]\n",size);
     fi->pPath->curDir[fi->pPath->index].fileSize = size;
 
     //writes parent dir of file to disk
@@ -423,10 +423,10 @@ int moveDirEntry(char* src, char* dest) {
     parsedPath* pPathDest = parsePath(copy);
     free(copy);
 
-    printf("SRC\n");
-    printParsedPath(pPath);
-    printf("DEST\n");
-    printParsedPath(pPathDest);
+    //printf("SRC\n");
+    //printParsedPath(pPath);
+   // printf("DEST\n");
+    //printParsedPath(pPathDest);
 
     //finds free spot in parent directory of dest and 
     //sets src file info in free spot
@@ -455,39 +455,37 @@ int moveDirEntry(char* src, char* dest) {
 
 
 fdDir * fs_opendir(const char *name){
-   printf("Begin open\n"); 
+   //printf("Begin open\n"); 
    parsedPath* pPath = parsePath((char *)name);
        loadDir(pPath->parentDir->location, pPath->index);
        pPath->curDir[pPath->index].isDir;
+
        fdDir* newDir = malloc(sizeof(fdDir));
        newDir->ptr = malloc(dirSize);
        newDir->dirItemInfo = malloc(sizeof(struct fs_diriteminfo));
+
+       newDir->ptr = pPath->curDir;
        newDir->index=pPath->index;
        newDir->ptr->inUse=1;
-    printf("end open\n");
+    //printf("end open\n");
    return newDir;
 }
  
 struct fs_diriteminfo *fs_readdir(fdDir *dirp){
-  
-   //dirp = malloc(sizeof(fdDir));
-   //dirp->ptr = malloc(dirSize);
-   printf("Begin reading\n"); 
-
-  
+   //printf("Begin reading\n"); 
    for(int i=dirp->index;i<10;i++){
-       printf("in 4\n");
+       //printf("in 4\n");
        if( dirp->ptr[i].inUse)
        {
-           printf("in if\n");
+           //printf("in if\n");
            strcpy(dirp->dirItemInfo->d_name,dirp->ptr[i].fileName);
-           printf("file name copied\n");
+           //printf("file name copied iteminfo[%s], ptr[%s]\n",dirp->dirItemInfo->d_name,dirp->ptr[i].fileName);
            dirp->dirItemInfo->fileType=dirp->ptr->isDir;
-           printf("file typeset\n");
+           //printf("file typeset\n");
            dirp->index=i+1;
-           printf("index iterated\n");
+           //printf("index iterated\n");
  
-               return dirp->dirItemInfo;
+            return dirp->dirItemInfo;
        } else {
            dirp->dirItemInfo = NULL;
        }    
@@ -495,22 +493,34 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp){
    }
       
 }
- 
- 
   
 int fs_closedir(fdDir *dirp){
-    printf("Is this closed\n");
+    //printf("Is this closed\n");
     free(dirp);
     return 0;
 }
  
 int fs_stat(const char *path, struct fs_stat *buf){
-  printf("am i being called\n");
-  buf->st_size =buf->dirEntry->fileSize;
-  buf->st_blksize = fs_blockSize;      /* blocksize for file system I/O */
-   buf->st_blocks = buf->dirEntry->fileSize/fs_blockSize; 
-   buf->st_createtime = buf->dirEntry->dateCreated;
-   buf->st_modtime = buf->dirEntry->dateModified;
+    //printf("fs_stat called\n");
+    //buf = malloc(sizeof(struct fs_stat));
+    char* copy = (char*)malloc(strlen(path) + 1);
+    strcpy(copy, path);
+    parsedPath* pPath = parsePath(copy);
+    free(copy);
+
+    //printParsedPath(pPath);
+
+    //printf("fs stat malloc'd");
+    buf->st_size = pPath->parentDir[pPath->index].fileSize;
+    //printf("file size set[%d]\n",pPath->parentDir[pPath->index].fileSize);
+    buf->st_blksize = fs_blockSize;      /* blocksize for file system I/O */
+    //printf("blk size set[%d]\n", fs_blockSize);
+    buf->st_blocks = pPath->parentDir[pPath->index].fileSize / fs_blockSize; 
+    //printf("blocks set[%d]\n", pPath->parentDir[pPath->index].fileSize / fs_blockSize);
+    buf->st_createtime = pPath->parentDir[pPath->index].dateCreated;
+    //printf("creattime set[%ld]\n",pPath->parentDir[pPath->index].dateCreated);
+    buf->st_modtime = pPath->parentDir[pPath->index].dateModified;
+    //printf("modtime set[%ld]\n",pPath->parentDir[pPath->index].dateModified);
  
    return 0;
 }
