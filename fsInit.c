@@ -135,7 +135,7 @@ void initVCB(uint64_t numberOfBlocks, uint64_t blockSize){
 	vcb->bitMapBlocks = freeSpaceSize;       // Number of blocks within the Bitmap
 	vcb->RootDirectory = initRoot(blockSize);      // Location of the Root Directory
 	vcb->Signature = SIGNATURE;
-	//LBAread(vcb,1,0);
+
 	LBAwrite(vcb,1,0);
 
 }

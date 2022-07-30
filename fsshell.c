@@ -28,12 +28,6 @@
 #include "fsLow.h"
 #include "mfs.h"
 
-// fdDir * fs_opendir(const char *name)
-// 		{
-// 		DIR * dir;
-// 		dir = opendir(name);
-// 		return ((fdDir *) dir);
-// 		}
 
 #define PERMISSIONS (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
 
