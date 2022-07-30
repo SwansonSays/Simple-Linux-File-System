@@ -149,7 +149,7 @@ int fs_setcwd(char *buf) {
     char* copy = (char*)malloc(strlen(buf) + 1);
     strcpy(copy, buf);
     parsedPath* pPath = parsePath(copy);
-    free(copy);
+    // free(copy);
 
     //printParsedPath(pPath);
     //if the last element of the path is a directory move cwd to that directory
@@ -173,7 +173,7 @@ int fs_mkdir(const char *pathname, mode_t mode) {
     char* copy = (char*)malloc(strlen(pathname) + 1);
     strcpy(copy, pathname);
     parsedPath* pPath = parsePath(copy);
-    free(copy);
+    // free(copy);
      //printParsedPath(pPath);
     /*
     printf("FINSIHED PARSING IN MKDIR\n");
@@ -241,7 +241,7 @@ int fs_isFile(char* path) {
     char* copy = (char*)malloc(strlen(path) + 1);
     strcpy(copy, path);
     parsedPath* pPath = parsePath(copy);
-    free(copy);
+    // free(copy);
     if(pPath->lastElement == 1) {
         freepPath(pPath);
         return 1;
@@ -254,7 +254,7 @@ int fs_isDir(char* path) {
     char* copy = (char*)malloc(strlen(path) + 1);
     strcpy(copy, path);
     parsedPath* pPath = parsePath(copy);
-    free(copy);
+    // free(copy);
     if(pPath->lastElement == 0) {
         freepPath(pPath);
         return 1;
@@ -268,7 +268,7 @@ int fs_rmdir(const char *pathname) {
     char* copy = (char*)malloc(strlen(pathname) + 1);
     strcpy(copy, pathname);
     parsedPath* pPath = parsePath(copy);
-    free(copy);
+    // free(copy);
 
     //printParsedPath(pPath);
 
@@ -289,7 +289,7 @@ int fs_delete(char* filename) {
     char* copy = (char*)malloc(strlen(filename) + 1);
     strcpy(copy, filename);
     parsedPath* pPath = parsePath(copy);
-    free(copy);
+    // free(copy);
 
     if(pPath->lastElement == 1) {
         
@@ -346,7 +346,7 @@ fileInfo* getFileInfo(char* path, int create) {
     char* copy = (char*)malloc(strlen(path) + 1);
     strcpy(copy, path);
     parsedPath* pPath = parsePath(copy);
-    free(copy);
+    // free(copy);
 
     if(pPath->lastElement == file) {
         fi = malloc(sizeof(fileInfo));
@@ -362,3 +362,53 @@ fileInfo* getFileInfo(char* path, int create) {
     return fi;
 }
 
+fdDir * fs_opendir(const char *name){
+    printf("Begin open\n");  
+    parsedPath* pPath = parsePath((char *)name);
+        loadDir(pPath->parentDir->location, pPath->index);
+        pPath->curDir[pPath->index].isDir;
+        fdDir* newDir = malloc(sizeof(fdDir));
+        newDir->index=pPath->index;
+        // newDir->ptr->inUse=1;
+    return newDir;
+}
+
+struct fs_diriteminfo *fs_readdir(fdDir *dirp){ 
+    
+    dirp = malloc(sizeof(fdDir));
+    dirp->ptr = malloc(dirSize);
+    printf("Begin reading\n");  
+
+    
+    for(int i=dirp->index;i<10;i++){ 
+        if(dirp->index==0)
+        {
+            strcpy(dirp->dirItemInfo->d_name,dirp->ptr[i].fileName);
+            dirp->dirItemInfo->fileType=dirp->ptr->isDir;
+            dirp->index=i+1;
+
+                return dirp->dirItemInfo;
+        }     
+        return dirp->dirItemInfo;
+    }
+        
+}
+
+
+    
+ int fs_closedir(fdDir *dirp){
+     printf("Is this closed\n");
+     free(dirp);
+     return 0;
+ }
+
+int fs_stat(const char *path, struct fs_stat *buf){
+   printf("am i being called\n");
+   buf->st_size =buf->dirEntry->fileSize;
+   buf->st_blksize = fs_blockSize;		/* blocksize for file system I/O */
+	buf->st_blocks = buf->dirEntry->fileSize/fs_blockSize;  
+    buf->st_createtime = buf->dirEntry->dateCreated;
+    buf->st_modtime = buf->dirEntry->dateModified;
+
+    return 0;
+}

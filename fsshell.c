@@ -28,6 +28,12 @@
 #include "fsLow.h"
 #include "mfs.h"
 
+// fdDir * fs_opendir(const char *name)
+// 		{
+// 		DIR * dir;
+// 		dir = opendir(name);
+// 		return ((fdDir *) dir);
+// 		}
 
 #define PERMISSIONS (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
 
@@ -37,7 +43,7 @@
 #define DIRMAX_LEN		4096
 
 /****   SET THESE TO 1 WHEN READY TO TEST THAT COMMAND ****/
-#define CMDLS_ON	0
+#define CMDLS_ON	1
 #define CMDCP_ON	1
 #define CMDMV_ON	1
 #define CMDMD_ON	1
@@ -118,6 +124,7 @@ int displayFiles (fdDir * dirp, int flall, int fllong)
 			}
 		di = fs_readdir (dirp);
 		}
+		printf("Youre not that guy");
 	fs_closedir (dirp);
 #endif
 	return 0;
@@ -204,6 +211,7 @@ int cmd_ls (int argcnt, char *argvec[])
 				{
 				fdDir * dirp;
 				dirp = fs_opendir (argvec[k]);
+				printf("is this even open");
 				displayFiles (dirp, flall, fllong);
 				}
 			else // it is just a file ?

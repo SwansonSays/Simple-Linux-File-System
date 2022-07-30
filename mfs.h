@@ -60,7 +60,7 @@ typedef struct
 	int index;
 	dirEntry * ptr;
 	int MaxNumEntries;
-	// fs_diriteminfo;
+	struct fs_diriteminfo * dirItemInfo;
 	} fdDir;
 
 // Key directory functions
@@ -91,6 +91,7 @@ struct fs_stat
 	time_t    st_createtime;   	/* time of last status change */
 	
 	/* add additional attributes here for your file system */
+	dirEntry* dirEntry;
 	};
 
 int fs_stat(const char *path, struct fs_stat *buf);
