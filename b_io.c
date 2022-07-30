@@ -34,8 +34,8 @@ typedef struct b_fcb
 	fileInfo* fi;	//holds file info
 	int flags;		//holds flags ie RD_ONLY, WR_ONLY
 	int fileOffset;	//holds the current position in the file
-	int currentBlk;
-	int numBlocks;
+	int currentBlk;	//holds current block
+	int numBlocks; //hold the number of blocks in the file
 	} b_fcb;
 	
 b_fcb fcbArray[MAXFCBS];
@@ -85,17 +85,14 @@ b_io_fd b_open (char * filename, int flags)
 	if(returnFd == -1) {				// check for error - all used FCB's
 		return -1;
 	}		
-	//Check if create flag is set
-	if(flags & (1 << 6)) {
-		printf("Create is set\n");
-		fi = getFileInfo(filename, 1); //check for null
-	} else {
-		fi = getFileInfo(filename, 0);
-	}
+	
+	fi = getFileInfo(filename, flags);
 
 	if(fi == NULL) {
 		return -2;
 	}			
+
+	printf("FI: fd[%d], name[%s], fileSize[%d], location[%d]\n", returnFd, fi->fileName, fi->fileSize, fi->location);
 		
 
 	fcbArray[returnFd].fi = fi;
@@ -150,19 +147,32 @@ int b_write (b_io_fd fd, char * buffer, int count)
 		{
 		return (-1); 					//invalid file descriptor
 		}
+	if(fcbArray[fd].flags == 0) {
+		printf("Cannot write to read only file\n");
+		return -1;
+	}
 
 	int bytesWritten = 0;
-
+	printf("before write loop\n");
+	printf("Count[%d] > fs_blockSize[%d]\n",count,fs_blockSize);
 	while(count > fs_blockSize) {
+		printf("in write loop\n");
 		memcpy(fcbArray[fd].buf, buffer + fcbArray[fd].fileOffset, fs_blockSize);
 		LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].fi->location + (bytesWritten / fs_blockSize));
 		fcbArray[fd].fileOffset += fs_blockSize;
 		count = count - fcbArray[fd].fileOffset;
 		bytesWritten += fs_blockSize;
 	}
+	printf("finished write loop\n");
+	printf("write before memcpy offset[%d] count[%d]\n",fcbArray[fd].fileOffset, count);
+
+	bytesWritten += count;
+
 	memcpy(fcbArray[fd].buf, buffer + fcbArray[fd].fileOffset, count);
 	LBAwrite(fcbArray[fd].buf,1,fcbArray[fd].fi->location + (bytesWritten / fs_blockSize));
 		
+	setFileSize(fcbArray[fd].fi, bytesWritten);
+
 	return (bytesWritten); //Change this
 	}
 
@@ -205,6 +215,11 @@ int b_read (b_io_fd fd, char * buffer, int count)
 		}
 	
 	if (fcbArray[fd].fi == NULL) {
+		return -1;
+	}
+
+	if(fcbArray[fd].flags & (1 << 0)) {
+		printf("Cannot write to read only file\n");
 		return -1;
 	}
 

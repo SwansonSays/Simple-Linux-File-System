@@ -340,7 +340,8 @@ fileInfo* makeFile(parsedPath* pPath) {
 
     return fi;
 }
-
+//populates fileInfo sturct for file at path
+//truncates or creates file if flags are set
 fileInfo* getFileInfo(char* path, int create) {
     fileInfo* fi;
     char* copy = (char*)malloc(strlen(path) + 1);
@@ -362,53 +363,102 @@ fileInfo* getFileInfo(char* path, int create) {
     return fi;
 }
 
-fdDir * fs_opendir(const char *name){
-    printf("Begin open\n");  
-    parsedPath* pPath = parsePath((char *)name);
-        loadDir(pPath->parentDir->location, pPath->index);
-        pPath->curDir[pPath->index].isDir;
-        fdDir* newDir = malloc(sizeof(fdDir));
-        newDir->index=pPath->index;
-        // newDir->ptr->inUse=1;
-    return newDir;
+//Sets size in file info
+void setFileSize(fileInfo* fi, int size) {
+    printf("set file info called size[%d]\n",size);
+    fi->pPath->curDir[fi->pPath->index].fileSize = size;
+
+    //writes parent dir of file to disk
+    char* writeFile = (char*) fi->pPath->curDir;
+    LBAwrite(writeFile, dirSize/fs_blockSize, fi->pPath->curDir[0].location);
 }
 
-struct fs_diriteminfo *fs_readdir(fdDir *dirp){ 
-    
-    dirp = malloc(sizeof(fdDir));
-    dirp->ptr = malloc(dirSize);
-    printf("Begin reading\n");  
+//Moves dirEntry from src to dest
+int moveDirEntry(char* src, char* dest) {
+    char* copy = (char*)malloc(MAXFILEPATH);
+    strcpy(copy, src);
+    parsedPath* pPath = parsePath(copy);
+    strcpy(copy,dest);
+    parsedPath* pPathDest = parsePath(copy);
+    free(copy);
 
-    
-    for(int i=dirp->index;i<10;i++){ 
-        if(dirp->index==0)
-        {
-            strcpy(dirp->dirItemInfo->d_name,dirp->ptr[i].fileName);
-            dirp->dirItemInfo->fileType=dirp->ptr->isDir;
-            dirp->index=i+1;
+    printf("SRC\n");
+    printParsedPath(pPath);
+    printf("DEST\n");
+    printParsedPath(pPathDest);
 
-                return dirp->dirItemInfo;
-        }     
-        return dirp->dirItemInfo;
+    //finds free spot in parent directory of dest and 
+    //sets src file info in free spot
+    for(int i = 0; i < dirEntries; i++) {
+        if(pPath->parentDir[i].inUse == 0) {
+            pPathDest->parentDir[i].dateCreated = pPath->curDir[pPath->index].dateCreated;
+            pPathDest->parentDir[i].dateModified = time(0);
+            pPathDest->parentDir[i].fileSize = pPath->curDir[pPath->index].fileSize;
+            pPathDest->parentDir[i].location = pPath->curDir[pPath->index].location;
+            pPathDest->parentDir[i].isDir = pPath->curDir[pPath->index].isDir;
+            pPathDest->parentDir[i].inUse = pPath->curDir[pPath->index].inUse;
+            strcpy(pPathDest->parentDir[i].fileName, pPath->curDir[pPath->index].fileName);
+            break;
+        }
     }
-        
+
+    //write parent directory of dest and src to disk
+    removeDir(pPath->parentDir, pPath->index);
+    char* writeFile = (char*) pPath->parentDir;
+    LBAwrite(writeFile,dirSize/fs_blockSize, pPath->parentDir[0].location);
+    writeFile = (char*) pPathDest->parentDir;
+    LBAwrite(writeFile,dirSize/fs_blockSize, pPathDest->parentDir[0].location);
+    free(pPath);
+    return 1;
 }
 
-
-    
- int fs_closedir(fdDir *dirp){
-     printf("Is this closed\n");
-     free(dirp);
-     return 0;
- }
-
-int fs_stat(const char *path, struct fs_stat *buf){
-   printf("am i being called\n");
-   buf->st_size =buf->dirEntry->fileSize;
-   buf->st_blksize = fs_blockSize;		/* blocksize for file system I/O */
-	buf->st_blocks = buf->dirEntry->fileSize/fs_blockSize;  
-    buf->st_createtime = buf->dirEntry->dateCreated;
-    buf->st_modtime = buf->dirEntry->dateModified;
-
+fdDir * fs_opendir(const char *name){
+   printf("Begin open\n"); 
+   parsedPath* pPath = parsePath((char *)name);
+       loadDir(pPath->parentDir->location, pPath->index);
+       pPath->curDir[pPath->index].isDir;
+       fdDir* newDir = malloc(sizeof(fdDir));
+       newDir->index=pPath->index;
+       // newDir->ptr->inUse=1;
+   return newDir;
+}
+ 
+struct fs_diriteminfo *fs_readdir(fdDir *dirp){
+  
+   dirp = malloc(sizeof(fdDir));
+   dirp->ptr = malloc(dirSize);
+   printf("Begin reading\n"); 
+ 
+  
+   for(int i=dirp->index;i<10;i++){
+       if(dirp->index==0)
+       {
+           strcpy(dirp->dirItemInfo->d_name,dirp->ptr[i].fileName);
+           dirp->dirItemInfo->fileType=dirp->ptr->isDir;
+           dirp->index=i+1;
+ 
+               return dirp->dirItemInfo;
+       }    
+       return dirp->dirItemInfo;
+   }
+      
+}
+ 
+ 
+  
+int fs_closedir(fdDir *dirp){
+    printf("Is this closed\n");
+    free(dirp);
     return 0;
+}
+ 
+int fs_stat(const char *path, struct fs_stat *buf){
+  printf("am i being called\n");
+  buf->st_size =buf->dirEntry->fileSize;
+  buf->st_blksize = fs_blockSize;      /* blocksize for file system I/O */
+   buf->st_blocks = buf->dirEntry->fileSize/fs_blockSize; 
+   buf->st_createtime = buf->dirEntry->dateCreated;
+   buf->st_modtime = buf->dirEntry->dateModified;
+ 
+   return 0;
 }

@@ -1,14 +1,15 @@
 #include "directory.h"
 
+//loads directory at location with fileSize
 dirEntry* loadDir(int location, int fileSize) {
     dirEntry* lDir = malloc(dirSize);
-    LBAread(lDir,(fileSize / 512), location);
+    LBAread(lDir,(fileSize / dir_blockSize), location);
     return lDir;
 }
-
+//loads root directory to memory
 dirEntry* loadRoot() {
     dirEntry* dir = malloc(dirSize);
-    LBAread(dir,(dirSize / 512), rootLocation);
+    LBAread(dir,(dirSize / dir_blockSize), rootLocation);
     //printf("blocks to read[%d]\n",dirSize/512);
     return dir;
 }
@@ -27,12 +28,14 @@ void initDir(dirEntry* newDir) {
     }
 }
 
+//remloves directory
 int removeDir(dirEntry* parent, int index) {
     char* blank = "";
     //printf ("inRemoveDir parent name [%s]\n", parent[index].fileName);
     //printf ("inRemoveDir parent location [%d]\n", parent[index].location);
     //printf ("inRemoveDir index in parent [%d]\n", index);
 
+    //sets directory entry in parent to unused state
     strcpy(parent[index].fileName, blank);
     parent[index].fileSize = 0;
     parent[index].dateCreated = 0;
@@ -41,12 +44,14 @@ int removeDir(dirEntry* parent, int index) {
     parent[index].isDir = -1;
     parent[index].inUse = 0;
 
+    //write parent dir to disk
     char* writeDir = (char*) parent;
     //printf("LOCATION TO WRITE [%d]\n", parent[0].location);
-    LBAwrite(writeDir,dirSize/512, parent[0].location);
+    LBAwrite(writeDir,dirSize/dir_blockSize, parent[0].location);
     return 1;
 }
 
+//checks if dir is empty excludeing '.' and '..'
 int isEmpty(dirEntry* dir) {
     //iterate through entries skipping '.' and '..'
     for(int i = 2; i < dirEntries; i++) {
@@ -56,4 +61,5 @@ int isEmpty(dirEntry* dir) {
     }
     return 1; // return 1 if empty besides '.' and '..'
 }
+
 

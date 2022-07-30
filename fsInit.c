@@ -41,57 +41,7 @@ long Signature;              // Checks to see if the Volume Control Block is val
 
 }volumeControlBlock;
 
-/*
-typedef struct dirEntry{
-	time_t dateCreated;
-	time_t dateModified;
-	int fileSize;
-	int location;
-	int isDir;
-	int inUse;
-	char fileName[MAXFILENAME];
-}dirEntry;
-*/
-/*
-int freeSpaceSize; //size of bitMap
-unsigned char* freeSpaceMap; 
-*/
 volumeControlBlock * vcb;
-/*
-dirEntry* root;
-int dirEntries;
-*/
-
-/*
-void setBit(unsigned char* map, int i)
-	{
-		map[i/8] |= 1 << (i % 8);
-	}
-
-int getBit(unsigned char* map, int i) {
-	return map[i/8] & (1 << (i % 8)) != 0;
-}
-
-int getFree(int blocksNeeded) {
-	int freeCount = 0;
-	int firstFree = 0;
-	for(int i = 0; i < vcb->totalBlockCount; i++) {
-		if(i<10){
-		printf("bit[%d]\n",getBit(freeSpaceMap, i));
-		}
-		if(getBit(freeSpaceMap, i) == 0) {
-			if(freeCount == 0) {
-				firstFree = i;
-				printf("first free [%d]\n",firstFree);
-			}
-			freeCount++;
-			if(freeCount == blocksNeeded) {
-				return firstFree;
-			}
-		}
-	}
-}
-*/
 
 int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 	{
@@ -120,23 +70,21 @@ int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 
 int initRoot(uint64_t blockSize) {
 	int blocksNeeded = 0, bytesNeeded = 0, bytesLeftOver = 0, dirLeftOver = 0;
-	dirEntries = 0, dirSize = 0, rootLocation = 0;
+	dirEntries = 0, dirSize = 0, rootLocation = 0, dir_blockSize = 0;
 
+	//Calculates amount of entries in each directory based on blockSize of system
 	bytesNeeded = (MINDIRENTRIES * sizeof(dirEntry));
-	//printf("BYTES NEEDED: [%d]\n", bytesNeeded);
 	bytesLeftOver = bytesNeeded % blockSize;
-	//printf("BYTES LEFTOVER: [%d]\n", bytesLeftOver);
 	dirLeftOver = bytesLeftOver / sizeof(dirEntry);
 	dirEntries = MINDIRENTRIES + dirLeftOver;
-	//printf("DIR LEFTOVER: [%d]\n", dirLeftOver);
-	//printf("DIR ENTRY COUNT: [%d]\n", dirEntries);
 	bytesNeeded += dirLeftOver * sizeof(dirEntry);
 	blocksNeeded = (bytesNeeded / blockSize) + 1;
-	printf("BLOCKS NEEDED: [%d]\n", blocksNeeded);
-
+	dir_blockSize = blockSize;
 	dirSize = blocksNeeded * blockSize;
+
 	root = malloc(dirSize);
 	const char* blank = "";
+	//sets each directory space in root to initilised state
 	for(int i = 0; i < dirEntries; i++) {
 		strcpy(root[i].fileName, blank);
 		root[i].fileSize = 0;
@@ -147,14 +95,16 @@ int initRoot(uint64_t blockSize) {
 		root[i].inUse = 0;
 	}
 
+	//gets free location for root from freepsace management
+	//and sets blocks needed as used
 	rootLocation = getFree(blocksNeeded);
 	printf("Root location[%d]\n", rootLocation);
 	for(int i = 0; i < blocksNeeded; i++) {
 		setBit(freeSpaceMap, i + rootLocation);
 	}
-	
 	LBAwrite(freeSpaceMap, freeSpaceSize, 1);
 
+	//initializes '.' and '..' entry for root
 	strcpy(root[0].fileName, ".");
 	root[0].fileSize = dirSize;
 	root[0].dateCreated = time(0);
@@ -170,17 +120,13 @@ int initRoot(uint64_t blockSize) {
 	root[1].isDir = 1;
 	root[1].inUse = 1;
 	
-	//printf("FileName[%s], FIleSize[%d], DateCreated[%ld], DateModified[%ld], location[%d]\n",root[0].fileName,root[0].fileSize,root[0].dateCreated,root[0].dateModified,root[0].location);
-	//printf("FileName[%s], FIleSize[%d], DateCreated[%ld], DateModified[%ld], location[%d]\n",root[1].fileName,root[1].fileSize,root[1].dateCreated,root[1].dateModified,root[1].location);
-	//printf("DIR ENTRY SIZE[%ld]\n", sizeof(dirEntry));
-	
+	//wrties root to disk
 	char* writeRoot = (char*) root;
 	LBAwrite(writeRoot, blocksNeeded, rootLocation); 
 	return rootLocation;
 }
 
 void initVCB(uint64_t numberOfBlocks, uint64_t blockSize){
-	//vcb = malloc(sizeof(volumeControlBlock));
 	vcb = malloc(blockSize);
 	vcb->blockSize = blockSize; //Size of the blocks
 	vcb->totalBlockCount = numberOfBlocks;   //Total volume
