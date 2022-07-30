@@ -118,7 +118,6 @@ int displayFiles (fdDir * dirp, int flall, int fllong)
 			}
 		di = fs_readdir (dirp);
 		}
-		printf("Youre not that guy");
 	fs_closedir (dirp);
 #endif
 	return 0;
@@ -365,7 +364,6 @@ int cmd_cp (int argcnt, char *argvec[])
 int cmd_mv (int argcnt, char *argvec[])
 	{
 #if (CMDMV_ON == 1)				
-	//return -99;
 	// **** TODO ****  For you to implement	
 	char * src;
 	char * dest;

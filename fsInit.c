@@ -53,9 +53,7 @@ int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 	//set all bitmap values to 0
 	for(int i = 0; i < freeSpaceSize; i++)
 		{
-        
 		freeSpaceMap[i] = 0;
-        //printf("IN INIT MAP AT POS [%d] = [%d]\n", i, freeSpaceMap[i]);
 		}
     
 	//set bits as used for VCB and Free Space Managment
@@ -98,7 +96,6 @@ int initRoot(uint64_t blockSize) {
 	//gets free location for root from freepsace management
 	//and sets blocks needed as used
 	rootLocation = getFree(blocksNeeded);
-	printf("Root location[%d]\n", rootLocation);
 	for(int i = 0; i < blocksNeeded; i++) {
 		setBit(freeSpaceMap, i + rootLocation);
 	}
@@ -146,7 +143,6 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	/* TODO: Add any code you need to initialize your file system. */
 
 	initVCB(numberOfBlocks,blockSize);
-	//initmfs();
 	return 0;
 	}
 	
