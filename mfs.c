@@ -453,32 +453,43 @@ int moveDirEntry(char* src, char* dest) {
     return 1;
 }
 
+
 fdDir * fs_opendir(const char *name){
    printf("Begin open\n"); 
    parsedPath* pPath = parsePath((char *)name);
        loadDir(pPath->parentDir->location, pPath->index);
        pPath->curDir[pPath->index].isDir;
        fdDir* newDir = malloc(sizeof(fdDir));
+       newDir->ptr = malloc(dirSize);
+       newDir->dirItemInfo = malloc(sizeof(struct fs_diriteminfo));
        newDir->index=pPath->index;
-       // newDir->ptr->inUse=1;
+       newDir->ptr->inUse=1;
+    printf("end open\n");
    return newDir;
 }
  
 struct fs_diriteminfo *fs_readdir(fdDir *dirp){
   
-   dirp = malloc(sizeof(fdDir));
-   dirp->ptr = malloc(dirSize);
+   //dirp = malloc(sizeof(fdDir));
+   //dirp->ptr = malloc(dirSize);
    printf("Begin reading\n"); 
- 
+
   
    for(int i=dirp->index;i<10;i++){
-       if(dirp->index==0)
+       printf("in 4\n");
+       if( dirp->ptr[i].inUse)
        {
+           printf("in if\n");
            strcpy(dirp->dirItemInfo->d_name,dirp->ptr[i].fileName);
+           printf("file name copied\n");
            dirp->dirItemInfo->fileType=dirp->ptr->isDir;
+           printf("file typeset\n");
            dirp->index=i+1;
+           printf("index iterated\n");
  
                return dirp->dirItemInfo;
+       } else {
+           dirp->dirItemInfo = NULL;
        }    
        return dirp->dirItemInfo;
    }
