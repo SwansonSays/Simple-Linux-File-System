@@ -282,9 +282,11 @@ int fs_rmdir(const char *pathname) {
             LBAwrite(freeSpaceMap, freeSpaceSize, 1);
         } else {
             printf("Directory %s is not empty. Directory must be empty to be deleted.\n", pPath->lastElementName);
+            free(pPath);
             return -1;
         }
     }
+    free(pPath);
     return 1;
 }
 
@@ -301,6 +303,7 @@ int fs_delete(char* filename) {
         }
         LBAwrite(freeSpaceMap, freeSpaceSize, 1);
     }
+    free(pPath);
     return 1;
 }
 
@@ -414,12 +417,11 @@ int moveDirEntry(char* src, char* dest) {
         }
     }
 
-    //delete src write but dont freespace manage
     removeDir(pPath->parentDir, pPath->index);
     char* writeFile = (char*) pPath->parentDir;
     LBAwrite(writeFile,dirSize/fs_blockSize, pPath->parentDir[0].location);
     writeFile = (char*) pPathDest->parentDir;
     LBAwrite(writeFile,dirSize/fs_blockSize, pPathDest->parentDir[0].location);
-
+    free(pPath);
     return 1;
 }
