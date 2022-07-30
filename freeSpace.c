@@ -1,13 +1,16 @@
 #include "freeSpace.h"
 
+//sets bit to used in freespace map at locaiton i
 void setBit(unsigned char* map, int i) {
 	map[i/8] |= 1 << (i % 8);
 }
 
+//gets bit from freepsace map at location i
 int getBit(unsigned char* map, int i) {
 	return map[i/8] & (1 << (i % 8)) != 0;
 }
 
+//gets free blocks in map
 int getFree(int blocksNeeded) {
 	int freeCount = 0;
 	int firstFree = 0;
@@ -30,6 +33,7 @@ int getFree(int blocksNeeded) {
 	}
 }
 
+//sets bit to unused at location i
 void clearBit(unsigned char* map, int i) {
 	map[i/8] &= ~(1 << (i % 8));
 }
