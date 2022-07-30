@@ -2,8 +2,9 @@
 
 
 #define MAXFILEPATH 4096
-
+/*
 typedef enum {dir,file,nf} LASTELEMENT;
+
 
 typedef struct parsedPath {
     int isPath; //0 if not complete path or 1 if is
@@ -13,7 +14,7 @@ typedef struct parsedPath {
     int index; //index of file or dir in parent directory
     char lastElementName[MAXFILENAME]; //name of the last element in path
 }parsedPath;
-
+*/
 dirEntry* cwd;
 char cwdPath[MAXFILEPATH];
 int isInit = 0;
@@ -281,8 +282,10 @@ int fs_rmdir(const char *pathname) {
             LBAwrite(freeSpaceMap, freeSpaceSize, 1);
         } else {
             printf("Directory %s is not empty. Directory must be empty to be deleted.\n", pPath->lastElementName);
+            return -1;
         }
     }
+    return 1;
 }
 
 int fs_delete(char* filename) {
@@ -292,8 +295,13 @@ int fs_delete(char* filename) {
     free(copy);
 
     if(pPath->lastElement == 1) {
-        
+        removeDir(pPath->parentDir, pPath->index);
+        for(int i = 0; i < dirSize / fs_blockSize; i++) {
+            clearBit(freeSpaceMap, i + pPath->curDir[0].location);
+        }
+        LBAwrite(freeSpaceMap, freeSpaceSize, 1);
     }
+    return 1;
 }
 
 fileInfo* makeFile(parsedPath* pPath) {
@@ -321,6 +329,8 @@ fileInfo* makeFile(parsedPath* pPath) {
             pPath->curDir[i].location = location;
             pPath->curDir[i].isDir = 0;
             pPath->curDir[i].inUse = 1;
+
+            pPath->index = i;
             break;
         }
     }
@@ -328,6 +338,7 @@ fileInfo* makeFile(parsedPath* pPath) {
     strcpy(fi->fileName,pPath->lastElementName);
     fi->fileSize = 0;
     fi->location = location;
+    fi->pPath = pPath;
     //writes file to disk
     /*
     char* writeFile = (char*) file;
@@ -341,21 +352,26 @@ fileInfo* makeFile(parsedPath* pPath) {
     return fi;
 }
 
-fileInfo* getFileInfo(char* path, int create) {
+fileInfo* getFileInfo(char* path, int flags) {
     fileInfo* fi;
     char* copy = (char*)malloc(strlen(path) + 1);
     strcpy(copy, path);
     parsedPath* pPath = parsePath(copy);
     free(copy);
 
-    //printParsedPath(pPath);
+    printParsedPath(pPath);
 
     if(pPath->lastElement == file) {
         fi = malloc(sizeof(fileInfo));
         strcpy(fi->fileName,pPath->lastElementName);
         fi->fileSize = pPath->curDir[pPath->index].fileSize;
         fi->location = pPath->curDir[pPath->index].location;
-    } else if(pPath->lastElement == nf && create == 1) {
+    } else if(pPath->lastElement == file && (flags & (1 << 9))) { //truncates file if found
+        fi = malloc(sizeof(fileInfo));
+        strcpy(fi->fileName,pPath->lastElementName);
+        fi->fileSize = 0;
+        fi->location = pPath->curDir[pPath->index].location;
+    } else if(pPath->lastElement == nf && (flags & (1 << 6))) { //creates file if not found
         fi = makeFile(pPath);
         printf("Finished makeFile()\n");
     } else {
@@ -365,3 +381,45 @@ fileInfo* getFileInfo(char* path, int create) {
     return fi;
 }
 
+void setFileSize(fileInfo* fi, int size) {
+    printf("set file info called size[%d]\n",size);
+    fi->pPath->curDir[fi->pPath->index].fileSize = size;
+
+    char* writeFile = (char*) fi->pPath->curDir;
+    LBAwrite(writeFile, dirSize/fs_blockSize, fi->pPath->curDir[0].location);
+}
+
+int moveDirEntry(char* src, char* dest) {
+    char* copy = (char*)malloc(MAXFILEPATH);
+    strcpy(copy, src);
+    parsedPath* pPath = parsePath(copy);
+    strcpy(copy,dest);
+    parsedPath* pPathDest = parsePath(copy);
+    free(copy);
+
+    printf("SRC\n");
+    printParsedPath(pPath);
+    printf("DEST\n");
+    printParsedPath(pPathDest);
+    for(int i = 0; i < dirEntries; i++) {
+        if(pPath->parentDir[i].inUse == 0) {
+            pPathDest->parentDir[i].dateCreated = pPath->curDir[pPath->index].dateCreated;
+            pPathDest->parentDir[i].dateModified = time(0);
+            pPathDest->parentDir[i].fileSize = pPath->curDir[pPath->index].fileSize;
+            pPathDest->parentDir[i].location = pPath->curDir[pPath->index].location;
+            pPathDest->parentDir[i].isDir = pPath->curDir[pPath->index].isDir;
+            pPathDest->parentDir[i].inUse = pPath->curDir[pPath->index].inUse;
+            strcpy(pPathDest->parentDir[i].fileName, pPath->curDir[pPath->index].fileName);
+            break;
+        }
+    }
+
+    //delete src write but dont freespace manage
+    removeDir(pPath->parentDir, pPath->index);
+    char* writeFile = (char*) pPath->parentDir;
+    LBAwrite(writeFile,dirSize/fs_blockSize, pPath->parentDir[0].location);
+    writeFile = (char*) pPathDest->parentDir;
+    LBAwrite(writeFile,dirSize/fs_blockSize, pPathDest->parentDir[0].location);
+
+    return 1;
+}

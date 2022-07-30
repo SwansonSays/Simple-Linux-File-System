@@ -363,8 +363,34 @@ int cmd_cp (int argcnt, char *argvec[])
 int cmd_mv (int argcnt, char *argvec[])
 	{
 #if (CMDMV_ON == 1)				
-	return -99;
+	//return -99;
 	// **** TODO ****  For you to implement	
+	char * src;
+	char * dest;
+	int rv;
+	printf("IN MV\n");
+	switch(argcnt)
+	{
+		case 3:
+			printf("in switcn");
+			src = argvec[1];
+			dest = argvec[2];
+			break; 
+		default:
+			printf("Usage: mv srcfile [dest]\n");
+			return (-1);
+	}
+	if(fs_isFile(src) && fs_isDir(dest)) {
+		rv = moveDirEntry(src, dest);
+	}else {
+		printf("Move failed\n");
+		return (-1);
+	}
+	if(rv == -1) {
+		printf("Move failed\n");
+		return (-1);
+	}
+
 #endif
 	return 0;
 	}

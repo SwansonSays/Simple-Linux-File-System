@@ -93,5 +93,7 @@ int fs_stat(const char *path, struct fs_stat *buf);
 
 int initmfs();
 fileInfo* getFileInfo(char* path, int create);
+void setFileSize(fileInfo* fi, int size);
+int moveDirEntry(char* src, char* dest);
 #endif
 
