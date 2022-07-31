@@ -1,3 +1,16 @@
+/**************************************************************
+* Class: CSC-415-01 Summer 2022
+* Names: Robert Swanson, Kevin Islas Orgaz
+* Student IDs:917106793, 921260116
+* GitHub Name: csc415-filesystem-SwansonSays
+* Group Name:We didn't get that far
+* Project: Basic File System
+*
+* File: directory.h
+*
+* Description: Initilizes a directory as well as removes and
+*loads directories.
+**************************************************************/
 #include "directory.h"
 
 //loads directory at location with fileSize

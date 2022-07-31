@@ -1,9 +1,9 @@
 /**************************************************************
 * Class:  CSC-415-0# Fall 2021
-* Names: 
-* Student IDs:
-* GitHub Name:
-* Group Name:
+* Names: Robert Swanson, Kevin Islas Orgaz
+* Student IDs:917106793, 921260116
+* GitHub Name:csc415-filesystem-SwansonSays
+* Group Name:We didn't get that far
 * Project: Basic File System
 *
 * File: b_io.c
@@ -79,7 +79,7 @@ b_io_fd b_open (char * filename, int flags)
 	//
 
 	if (startup == 0) b_init();  //Initialize our system
-	
+
 	returnFd = b_getFCB();				// get our own file descriptor
 	if(returnFd == -1) {				// check for error - all used FCB's
 		return -1;
@@ -88,7 +88,7 @@ b_io_fd b_open (char * filename, int flags)
 	if(fi == NULL) {
 		return -2;
 	}					
-
+	
 	fcbArray[returnFd].fi = fi;
 	fcbArray[returnFd].buf = malloc(fs_blockSize);
 	fcbArray[returnFd].buflen = 0;
@@ -211,7 +211,7 @@ int b_read (b_io_fd fd, char * buffer, int count)
 
 	remainingBytesInMyBuffer = fcbArray[fd].buflen - fcbArray[fd].index;	
 	int amountDelivered = (fcbArray[fd].currentBlk * fs_blockSize) - remainingBytesInMyBuffer;
-
+	
 	if((count + amountDelivered) > fcbArray[fd].fi->fileSize) {
 		count = fcbArray[fd].fi->fileSize - amountDelivered;
 
@@ -263,8 +263,8 @@ int b_read (b_io_fd fd, char * buffer, int count)
 		}
 	}
 	bytesReturned = part1 + part2 + part3;
-	
-	return (bytesReturned);	//Change this
+
+	return (bytesReturned);
 	}
 	
 // Interface to Close the file	

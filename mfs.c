@@ -320,7 +320,7 @@ fileInfo* getFileInfo(char* path, int flags) {
         strcpy(fi->fileName,pPath->lastElementName);
         fi->fileSize = pPath->curDir[pPath->index].fileSize;
         fi->location = pPath->curDir[pPath->index].location;
-    } else if(pPath->lastElement == nf && (flags & (1 << 6))) { //creates file if not found
+    } else if((pPath->lastElement == nf || pPath->lastElement == 0 ) && (flags & (1 << 6))) { //creates file if not found
         fi = makeFile(pPath); 
     } else {
         fi = NULL;
@@ -372,7 +372,7 @@ int moveDirEntry(char* src, char* dest) {
     return 1;
 }
 
-
+//Opens directory from call in fsshell
 fdDir * fs_opendir(const char *name){ 
     parsedPath* pPath = parsePath((char *)name);
     loadDir(pPath->parentDir->location, pPath->index);
@@ -388,7 +388,8 @@ fdDir * fs_opendir(const char *name){
 
     return newDir;
 }
- 
+
+//Fills in directory item information and returns results to fsshell.c to display  
 struct fs_diriteminfo *fs_readdir(fdDir *dirp){ 
    for(int i=dirp->index;i<10;i++){
        if( dirp->ptr[i].inUse) {
@@ -404,12 +405,13 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp){
    }
       
 }
-  
+  //Closes out the directory 
 int fs_closedir(fdDir *dirp){
     free(dirp);
     return 0;
 }
  
+ //
 int fs_stat(const char *path, struct fs_stat *buf){
     char* copy = (char*)malloc(strlen(path) + 1);
     strcpy(copy, path);
