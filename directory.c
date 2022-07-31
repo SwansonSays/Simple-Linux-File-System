@@ -10,6 +10,7 @@ dirEntry* loadDir(int location, int fileSize) {
 dirEntry* loadRoot() {
     dirEntry* dir = malloc(dirSize);
     LBAread(dir,(dirSize / dir_blockSize), rootLocation);
+
     return dir;
 }
 

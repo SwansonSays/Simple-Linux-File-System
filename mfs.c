@@ -98,7 +98,6 @@ int fs_setcwd(char *buf) {
     strcpy(copy, buf);
     parsedPath* pPath = parsePath(copy);
     free(copy);
-
     if(strcmp(buf, "..") == 0) {
         cwd = pPath->parentDir;
         strcpy(cwdPath, pPath->parentDir[pPath->index].fileName);
@@ -117,7 +116,6 @@ int fs_setcwd(char *buf) {
         freepPath(pPath);
         return 0;
     }
-    printf("move failed\n");
     freepPath(pPath);
     return -1;
 }
@@ -300,7 +298,6 @@ fileInfo* makeFile(parsedPath* pPath) {
     //write parent directory to disk
     char* writeFile = (char*) pPath->curDir;
     LBAwrite(writeFile, dirSize/fs_blockSize,  pPath->curDir[0].location);
-
     return fi;
 }
 
@@ -377,19 +374,19 @@ int moveDirEntry(char* src, char* dest) {
 
 
 fdDir * fs_opendir(const char *name){ 
-   parsedPath* pPath = parsePath((char *)name);
-       loadDir(pPath->parentDir->location, pPath->index);
-       pPath->curDir[pPath->index].isDir;
+    parsedPath* pPath = parsePath((char *)name);
+    loadDir(pPath->parentDir->location, pPath->index);
+    pPath->curDir[pPath->index].isDir;
+    //allocate memory
+    fdDir* newDir = malloc(sizeof(fdDir));
+    newDir->ptr = malloc(dirSize);
+    newDir->dirItemInfo = malloc(sizeof(struct fs_diriteminfo));
 
-       fdDir* newDir = malloc(sizeof(fdDir));
-       newDir->ptr = malloc(dirSize);
-       newDir->dirItemInfo = malloc(sizeof(struct fs_diriteminfo));
+    newDir->ptr = pPath->curDir;
+    newDir->index=pPath->index;
+    newDir->ptr->inUse=1;
 
-       newDir->ptr = pPath->curDir;
-       newDir->index=pPath->index;
-       newDir->ptr->inUse=1;
-
-   return newDir;
+    return newDir;
 }
  
 struct fs_diriteminfo *fs_readdir(fdDir *dirp){ 

@@ -43,6 +43,26 @@ long Signature;              // Checks to see if the Volume Control Block is val
 
 volumeControlBlock * vcb;
 
+int calculateDir(uint64_t numberOfBlocks,uint64_t blockSize) {
+	int blocksNeeded = 0, bytesNeeded = 0, bytesLeftOver = 0, dirLeftOver = 0;
+	dirEntries = 0, dirSize = 0, rootLocation = 0, dir_blockSize = 0;
+
+	//Calculates amount of entries in each directory based on blockSize of system
+	bytesNeeded = (MINDIRENTRIES * sizeof(dirEntry));
+	bytesLeftOver = bytesNeeded % blockSize;
+	dirLeftOver = bytesLeftOver / sizeof(dirEntry);
+	dirEntries = MINDIRENTRIES + dirLeftOver;
+	bytesNeeded += dirLeftOver * sizeof(dirEntry);
+	blocksNeeded = (bytesNeeded / blockSize) + 1;
+	dir_blockSize = blockSize;
+	dirSize = blocksNeeded * blockSize;
+	freeSpaceSize = ((numberOfBlocks / 8) / blockSize) + 1;
+	totalBlockCount = numberOfBlocks;
+	fs_blockSize = blockSize;
+	rootLocation = vcb->RootDirectory;
+	return blocksNeeded;
+}
+
 int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 	{
 	//number of blocks needed for freespacemap
@@ -66,19 +86,10 @@ int initBitMap(uint64_t numberOfBlocks, uint64_t blockSize)
 	return freeSpaceSize + 1;
 	}
 
-int initRoot(uint64_t blockSize) {
-	int blocksNeeded = 0, bytesNeeded = 0, bytesLeftOver = 0, dirLeftOver = 0;
-	dirEntries = 0, dirSize = 0, rootLocation = 0, dir_blockSize = 0;
-
-	//Calculates amount of entries in each directory based on blockSize of system
-	bytesNeeded = (MINDIRENTRIES * sizeof(dirEntry));
-	bytesLeftOver = bytesNeeded % blockSize;
-	dirLeftOver = bytesLeftOver / sizeof(dirEntry);
-	dirEntries = MINDIRENTRIES + dirLeftOver;
-	bytesNeeded += dirLeftOver * sizeof(dirEntry);
-	blocksNeeded = (bytesNeeded / blockSize) + 1;
-	dir_blockSize = blockSize;
-	dirSize = blocksNeeded * blockSize;
+int initRoot(uint64_t numberOfBlocks, uint64_t blockSize) {
+	
+	int blocksNeeded = 0;
+	blocksNeeded = calculateDir(numberOfBlocks, blockSize);
 
 	root = malloc(dirSize);
 	const char* blank = "";
@@ -124,24 +135,34 @@ int initRoot(uint64_t blockSize) {
 }
 
 void initVCB(uint64_t numberOfBlocks, uint64_t blockSize){
-	vcb = malloc(blockSize);
+	//vcb = malloc(blockSize);
 	vcb->blockSize = blockSize; //Size of the blocks
 	vcb->totalBlockCount = numberOfBlocks;   //Total volume
 	vcb->freeBlocks= vcb->totalBlockCount - initBitMap(numberOfBlocks, blockSize); // Number of free blocks
 	vcb->bitMapLocation = 1; //Location to the bitmap
 	vcb->bitMapBlocks = freeSpaceSize;       // Number of blocks within the Bitmap
-	vcb->RootDirectory = initRoot(blockSize);      // Location of the Root Directory
+	vcb->RootDirectory = initRoot(numberOfBlocks, blockSize);      // Location of the Root Directory
 	vcb->Signature = SIGNATURE;
+	//rootLocation = vcb->RootDirectory;
 
 	LBAwrite(vcb,1,0);
-
+	free(vcb);
 }
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	{
 	printf ("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
 	/* TODO: Add any code you need to initialize your file system. */
-
+	vcb = malloc(blockSize);
+	LBAread(vcb,1,0);
+	if(vcb->Signature == SIGNATURE) {
+		calculateDir(numberOfBlocks, blockSize);
+		freeSpaceMap = (unsigned char*) malloc(freeSpaceSize * blockSize);
+		LBAread(freeSpaceMap, freeSpaceSize, 1);
+		free(vcb);
+		printf("Volume already initilized\n");
+		return 0;
+	}
 	initVCB(numberOfBlocks,blockSize);
 	return 0;
 	}
@@ -150,6 +171,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 void exitFileSystem ()
 	{
 	printf ("System exiting\n");
+	
 	}
 
 

@@ -74,7 +74,6 @@ b_io_fd b_open (char * filename, int flags)
 	{
 	b_io_fd returnFd;
 	fileInfo* fi;
-
 	//*** TODO ***:  Modify to save or set any information needed
 	//
 	//
@@ -85,15 +84,10 @@ b_io_fd b_open (char * filename, int flags)
 	if(returnFd == -1) {				// check for error - all used FCB's
 		return -1;
 	}		
-	
 	fi = getFileInfo(filename, flags);
-
 	if(fi == NULL) {
 		return -2;
-	}			
-
-	printf("FI: fd[%d], name[%s], fileSize[%d], location[%d]\n", returnFd, fi->fileName, fi->fileSize, fi->location);
-		
+	}					
 
 	fcbArray[returnFd].fi = fi;
 	fcbArray[returnFd].buf = malloc(fs_blockSize);
@@ -104,9 +98,6 @@ b_io_fd b_open (char * filename, int flags)
 	fcbArray[returnFd].currentBlk = 0;
 	fcbArray[returnFd].numBlocks = (fi->fileSize + (fs_blockSize - 1)) / fs_blockSize;
 
-	printf("Flag [%d]\n", flags);
-	
-	
 	return (returnFd);						// all set
 	}
 
@@ -139,7 +130,6 @@ int b_seek (b_io_fd fd, off_t offset, int whence)
 // Interface to write function	
 int b_write (b_io_fd fd, char * buffer, int count)
 	{
-	printf("b_write called for fd[%d] to move [%d] bytes which are [%s]\n",fd,count,buffer);
 	if (startup == 0) b_init();  //Initialize our system
 
 	// check that fd is between 0 and (MAXFCBS-1)
@@ -153,21 +143,18 @@ int b_write (b_io_fd fd, char * buffer, int count)
 	}
 
 	int bytesWritten = 0;
-	printf("before write loop\n");
-	printf("Count[%d] > fs_blockSize[%d]\n",count,fs_blockSize);
+
+	//write full blocks to disk
 	while(count > fs_blockSize) {
-		printf("in write loop\n");
 		memcpy(fcbArray[fd].buf, buffer + fcbArray[fd].fileOffset, fs_blockSize);
 		LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].fi->location + (bytesWritten / fs_blockSize));
 		fcbArray[fd].fileOffset += fs_blockSize;
 		count = count - fcbArray[fd].fileOffset;
 		bytesWritten += fs_blockSize;
 	}
-	printf("finished write loop\n");
-	printf("write before memcpy offset[%d] count[%d]\n",fcbArray[fd].fileOffset, count);
 
 	bytesWritten += count;
-
+	//write leftover blocks to disk
 	memcpy(fcbArray[fd].buf, buffer + fcbArray[fd].fileOffset, count);
 	LBAwrite(fcbArray[fd].buf,1,fcbArray[fd].fi->location + (bytesWritten / fs_blockSize));
 		
@@ -199,7 +186,6 @@ int b_write (b_io_fd fd, char * buffer, int count)
 //  +-------------+------------------------------------------------+--------+
 int b_read (b_io_fd fd, char * buffer, int count)
 	{
-	printf("b_read called for fd [%d] for [%d] bytes which are [%s]\n",fd,count,buffer);
 	int bytesRead;
 	int bytesReturned;
 	int part1, part2, part3;
@@ -223,19 +209,14 @@ int b_read (b_io_fd fd, char * buffer, int count)
 		return -1;
 	}
 
-	printf("File Size [%d]\n", fcbArray[fd].fi->fileSize);
-
-	remainingBytesInMyBuffer = fcbArray[fd].buflen - fcbArray[fd].index;
-	printf("remaining BYtes [%d]\n", remainingBytesInMyBuffer);
-	
+	remainingBytesInMyBuffer = fcbArray[fd].buflen - fcbArray[fd].index;	
 	int amountDelivered = (fcbArray[fd].currentBlk * fs_blockSize) - remainingBytesInMyBuffer;
-	printf("almount delivered [%d]\n", amountDelivered);
 
 	if((count + amountDelivered) > fcbArray[fd].fi->fileSize) {
 		count = fcbArray[fd].fi->fileSize - amountDelivered;
 
 		if(count < 0) {
-			//error
+			return -1;
 		}
 	}
 
